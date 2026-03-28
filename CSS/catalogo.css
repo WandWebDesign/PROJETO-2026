@@ -1,0 +1,286 @@
+/* =======================================================
+   VARIÁVEIS LOCAIS (A mesma paleta premium)
+======================================================= */
+:root {
+    --cafe-escuro: #4A3B32;    
+    --cafe-claro: #6D5445;     
+    --dourado-suave: #D4AF37;  
+    --creme-fundo: #FFF9F0;    
+    --branco: #FFFFFF;
+}
+
+.main-catalogo {
+    padding: 3rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* =======================================================
+   CABEÇALHO DO SETOR (Título e Busca)
+======================================================= */
+.setor-cabecalho {
+    color: var(--cafe-escuro);
+    width: 100%;
+    margin: 20px auto 40px auto; 
+    padding: 0;
+}
+
+.setor-linha-titulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+    margin-bottom: 25px; 
+    border-bottom: 2px solid rgba(0,0,0,0.05);
+    padding-bottom: 15px;
+}
+
+#titulo-setor {
+    margin: 0;
+    font-family: 'Nunito', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--cafe-escuro);
+}
+
+.btn-voltar {
+    font-family: 'Nunito', sans-serif;
+    background-color: transparent;
+    color: var(--cafe-claro);
+    padding: 10px 24px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    border: 2px solid var(--cafe-claro);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.btn-voltar:hover {
+    background-color: var(--cafe-escuro);
+    color: var(--branco);
+    border-color: var(--cafe-escuro);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 59, 50, 0.2);
+}
+
+/* Barra de Busca do Catálogo */
+.setor-busca {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#barra-busca {
+    width: 100%;
+    padding: 15px 25px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background-color: var(--creme-fundo);
+    color: var(--cafe-escuro);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    transition: all 0.3s ease;
+}
+
+#barra-busca:focus {
+    border-color: var(--dourado-suave);
+    background-color: var(--branco);
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+    outline: none;
+}
+
+/* =======================================================
+   GRADE DE PRODUTOS E CARDS
+======================================================= */
+#container-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+    padding: 10px 0;
+}
+
+.card-container {
+    background-color: var(--branco);
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; 
+    transition: all 0.3s ease;
+}
+
+.card-container:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 25px rgba(74, 59, 50, 0.1);
+}
+
+.card-produto {
+    text-decoration: none;
+    color: inherit; 
+}
+
+.card-produto img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    transition: transform 0.4s ease;
+}
+
+.card-container:hover img {
+    transform: scale(1.08);
+}
+
+.card-produto h3 {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--cafe-escuro);
+    line-height: 1.2;
+}
+
+/* Preços */
+.card-precos {
+    display: flex;
+    flex-direction: column-reverse;
+    margin-bottom: 1.5rem;
+}
+
+.preco-normal,
+.preco-oferta {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--cafe-escuro);
+    margin-bottom: 0.2rem;
+}
+
+.preco-antigo {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    color: #A89F98;
+    text-decoration: line-through;
+}
+
+/* Botão Agendar / Adicionar */
+.btn-agendar {
+    background-color: transparent;
+    color: var(--cafe-escuro);
+    border: 2px solid var(--cafe-escuro);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 50px;
+    width: 100%;
+    padding: 10px 0;
+    margin-top: auto;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-agendar:hover {
+    background-color: var(--cafe-escuro);
+    color: var(--branco);
+    box-shadow: 0px 4px 12px rgba(74, 59, 50, 0.3);
+    transform: translateY(-2px);
+}
+
+/* =======================================================
+   DARK MODE (Ajustes para o Catálogo)
+======================================================= */
+body.dark-mode .setor-cabecalho {
+    color: #E8E0D5;
+}
+
+body.dark-mode #titulo-setor {
+    color: #D4AF37; /* Dourado no escuro */
+}
+
+body.dark-mode .btn-voltar {
+    color: #D4AF37;
+    border-color: #D4AF37;
+}
+
+body.dark-mode .btn-voltar:hover {
+    background-color: #D4AF37;
+    color: #1A110D;
+}
+
+body.dark-mode #barra-busca {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #E8E0D5;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .card-container {
+    background-color: #2A1C15;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+body.dark-mode .card-produto h3,
+body.dark-mode .preco-normal,
+body.dark-mode .preco-oferta {
+    color: #E8E0D5;
+}
+
+body.dark-mode .btn-agendar {
+    color: #D4AF37;
+    border-color: #D4AF37;
+}
+
+body.dark-mode .btn-agendar:hover {
+    background-color: #D4AF37;
+    color: #1A110D;
+}
+
+/* =======================================================
+   RESPONSIVIDADE
+======================================================= */
+@media (max-width: 768px) {
+    .setor-linha-titulo {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    #titulo-setor {
+        font-size: 2.2rem;
+    }
+
+    .btn-voltar {
+        width: 100%;
+    }
+
+    #container-produtos {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* 2 colunas no celular */
+        gap: 15px;
+    }
+
+    .card-produto h3 {
+        font-size: 1.1rem;
+    }
+
+    .preco-normal, .preco-oferta {
+        font-size: 1.3rem;
+    }
+    
+    .btn-agendar {
+        font-size: 0.8rem;
+        padding: 8px 0;
+    }
+}

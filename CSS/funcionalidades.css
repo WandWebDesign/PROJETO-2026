@@ -1,0 +1,208 @@
+/* =========================================
+   VARIÁVEIS DE MODO ESCURO (Noturno Gourmet)
+========================================= */
+body.dark-mode {
+    --bg: #1A110D;               /* Marrom espresso quase preto */
+    --creme-fundo: #2A1C15;      /* Fundo de seções mais claras */
+    --text: #E8E0D5;             /* Texto claro off-white */
+    --cafe-escuro: #E8E0D5;      /* Inverte o café escuro para claro */
+    --textcard: #D0C5B8;
+    --branco: #231610;           /* Onde era branco, vira um marrom bem escuro */
+    
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+/* Ajustes finos para o Dark Mode */
+body.dark-mode .header {
+    background-color: var(--bg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .menu-categorias {
+    background-color: var(--creme-fundo);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .escolhas img {
+    background-color: var(--bg);
+}
+
+body.dark-mode .card-produtos {
+    background-color: var(--creme-fundo);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+body.dark-mode #input-busca {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+}
+
+/* =========================================
+   CARRINHO LATERAL (OFF-CANVAS)
+========================================= */
+#carrinho-lateral {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Escondido fora da tela */
+    width: 380px;
+    max-width: 100vw; /* Garante que não quebre em celulares finos */
+    height: 100vh;
+    background-color: var(--branco);
+    box-shadow: -4px 0 25px rgba(0,0,0,0.15);
+    transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação super suave */
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Nunito', sans-serif;
+}
+
+body.dark-mode #carrinho-lateral {
+    background-color: var(--creme-fundo);
+    color: var(--text);
+}
+
+#carrinho-lateral.aberto {
+    right: 0; 
+}
+
+/* Cabeçalho do Carrinho */
+.carrinho-header {
+    padding: 20px 25px;
+    background-color: #4A3B32; /* Café escuro */
+    color: #D4AF37; /* Dourado */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.carrinho-header h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.carrinho-header button {
+    background: none;
+    border: none;
+    color: #FFF9F0;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.carrinho-header button:hover {
+    color: #D4AF37;
+}
+
+/* Itens do Carrinho */
+.carrinho-itens {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+}
+
+.item-carrinho {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    color: var(--cafe-escuro);
+}
+
+body.dark-mode .item-carrinho {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Rodapé do Carrinho */
+.carrinho-footer {
+    padding: 25px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .carrinho-footer {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.carrinho-footer h3 {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+    color: var(--cafe-escuro);
+}
+
+/* Botão Finalizar */
+.btn-finalizar {
+    width: 100%;
+    padding: 15px;
+    background-color: #D4AF37; /* Dourado */
+    color: #4A3B32; /* Café Escuro */
+    border: none;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-finalizar:hover {
+    background-color: #4A3B32;
+    color: #FFF9F0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 59, 50, 0.3);
+}
+
+/* =========================================
+   NOTIFICAÇÕES TOAST (Adicionado ao carrinho)
+========================================= */
+#toast-container {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.toast {
+    font-family: 'Nunito', sans-serif;
+    background-color: #4A3B32;
+    color: #FFF9F0;
+    padding: 15px 25px;
+    border-radius: 12px;
+    border-left: 5px solid #D4AF37; /* Detalhe lateral dourado */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    font-weight: 600;
+    font-size: 1.1rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.toast.mostrar {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    #toast-container {
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        align-items: center;
+    }
+    
+    .toast {
+        width: 100%;
+        text-align: center;
+    }
+}

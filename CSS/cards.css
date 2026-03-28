@@ -1,0 +1,209 @@
+/* =======================================================
+   VARIÁVEIS LOCAIS (Garantia de consistência)
+======================================================= */
+:root {
+    --cafe-escuro: #4A3B32;    
+    --cafe-claro: #6D5445;     
+    --dourado-suave: #D4AF37;  
+    --creme-fundo: #FFF9F0;    
+    --branco: #FFFFFF;
+}
+
+/* =======================================================
+   CONTAINER E GRADE DO CARROSSEL
+======================================================= */
+.conteiner-produtos {
+    padding: 5rem 2rem;
+}
+
+.grid-produtos {
+    position: relative;
+    width: 95%; /* Um pouco mais largo para acomodar os cartões soltos */
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.carrossel-conjunto {
+    display: flex;
+    overflow-x: auto; /* Permite rolar com o dedo no celular */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 20px 0; /* Espaço para a sombra dos cartões não cortar */
+}
+
+.carrossel-conjunto::-webkit-scrollbar {
+    display: none;
+}
+
+/* =======================================================
+   CARTÃO DO PRODUTO (Estilo Vitrine Premium)
+======================================================= */
+.card-produtos {
+    background-color: var(--branco);
+    padding: 1.5rem;
+    border-radius: 16px; /* Bordas mais arredondadas e modernas */
+    text-align: left;
+    color: var(--cafe-escuro);
+    border: 1px solid rgba(0, 0, 0, 0.03); /* Borda quase invisível */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); /* Sombra super leve */
+    
+    /* Configuração Flex para alinhar o botão sempre embaixo */
+    flex: 0 0 240px; /* Cartões levemente mais largos (era 190px) */
+    margin: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+}
+
+/* Efeito Flutuante no Hover */
+.card-produtos:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 25px rgba(74, 59, 50, 0.1); /* Sombra de café */
+}
+
+/* =======================================================
+   IMAGEM DO PRODUTO
+======================================================= */
+.card-produtos img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    margin-bottom: 1.5rem;
+    transition: transform 0.4s ease;
+}
+
+/* Efeito de Zoom na foto para dar fome */
+.card-produtos:hover img {
+    transform: scale(1.08);
+}
+
+/* =======================================================
+   TEXTOS DO PRODUTO
+======================================================= */
+.card-produtos h4 {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+    line-height: 1.2;
+}
+
+/* Nome do Setor (Ex: PADARIA) */
+.card-produtos h5 {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    color: var(--dourado-suave);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 1rem;
+    font-weight: 800;
+}
+
+/* Preço Principal */
+.card-produtos #texto-preço,
+.card-produtos .texto-preço {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--cafe-escuro);
+    margin-bottom: 0.2rem;
+}
+
+/* Informação Adicional / Preço Antigo */
+.card-produtos #texto-info,
+.card-produtos .texto-info {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    color: var(--cafe-claro);
+    margin-bottom: 1.5rem;
+}
+
+/* Preço cortado nas ofertas */
+.produto-ofertas #texto-info {
+    color: #A89F98;
+    text-decoration: line-through;
+    font-size: 1.1rem;
+}
+
+/* =======================================================
+   BOTÃO DE COMPRA/AGENDAR
+======================================================= */
+.botao-comprar {
+    background-color: transparent;
+    color: var(--cafe-escuro);
+    border: 2px solid var(--cafe-escuro);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 50px; /* Formato pílula */
+    width: 100%;
+    padding: 10px 0;
+    margin-top: auto; /* Empurra o botão pro final do card */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.botao-comprar:hover {
+    background-color: var(--cafe-escuro);
+    color: var(--branco);
+    box-shadow: 0px 4px 12px rgba(74, 59, 50, 0.3);
+    transform: translateY(-2px);
+}
+
+/* =======================================================
+   BOTÕES DIRECIONAIS DO CARROSSEL (< e >)
+======================================================= */
+.botao-carrossel {
+    position: absolute;
+    top: 50%;
+    /* O translate Y centraliza perfeitamente em relação à altura */
+    transform: translateY(-50%); 
+    background-color: var(--branco);
+    color: var(--cafe-escuro);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.botao-carrossel:hover {
+    background-color: var(--dourado-suave);
+    color: var(--branco);
+    border-color: var(--dourado-suave);
+    /* Mantém o centralizado e adiciona um leve aumento */
+    transform: translateY(-50%) scale(1.1); 
+    box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
+}
+
+.antes {
+    left: -15px;
+}
+
+.depois {
+    right: -15px;
+}
+
+/* Esconde as setas em telas muito pequenas (o usuário arrasta com o dedo) */
+@media (max-width: 768px) {
+    .botao-carrossel {
+        display: none;
+    }
+}
