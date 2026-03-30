@@ -77,7 +77,8 @@
     font-weight: 800;
     font-size: 2.5rem;
     color: var(--cafe-escuro);
-    margin-bottom: 2.5rem;
+    /* CORREÇÃO: Removi o margin-bottom gigante para alinhar com o botão */
+    margin-bottom: 0; 
     padding-top: 2rem;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -101,8 +102,11 @@
 .topo-cards {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Espalha título na esquerda e botão na direita */
-    margin-bottom: 1rem;
+    justify-content: space-between; 
+    
+    /* AS DUAS LINHAS MÁGICAS PARA ALINHAR COM OS CARDS: */
+    width: 90%; 
+    margin: 0 auto 2.5rem auto; /* Centraliza na tela e dá o espaço correto para os cards abaixo */
 }
 
 /* Botão "Ver Disponíveis / Ver Catálogo" */
