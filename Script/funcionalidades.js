@@ -202,3 +202,119 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+/* =======================================================
+   PESQUISA GLOBAL INTELIGENTE (IndexedDB)
+======================================================= */
+
+// Remove acentos para a pesquisa funcionar se o cliente digitar "pao" em vez de "pão"
+function removerAcentosBusca(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+async function pesquisarProdutos() {
+    const input = document.getElementById('input-busca');
+    const termo = input.value.trim().toLowerCase();
+    let dropdown = document.getElementById('dropdown-resultados');
+
+    // 1. Cria a caixa do menu suspenso se ela ainda não existir no HTML
+    if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = 'dropdown-resultados';
+        dropdown.className = 'busca-dropdown';
+        input.parentNode.appendChild(dropdown);
+    }
+
+    // 2. Se o cliente apagar o texto ou digitar menos de 2 letras, esconde a caixa
+    if (termo.length < 2) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    // 3. Conecta ao Banco de Dados (PadariaDB_V5)
+    try {
+        const DB_NAME = "PadariaDB_V5";
+        const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME);
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = () => reject("Erro ao abrir banco de dados");
+        });
+
+        // 4. Vasculha todos os setores buscando os itens
+        const setores = ["padaria", "acougue", "hortifruti", "mercado"];
+        let todosOsProdutos = [];
+
+        for (let setor of setores) {
+            if (db.objectStoreNames.contains(setor)) {
+                const transaction = db.transaction(setor, 'readonly');
+                const store = transaction.objectStore(setor);
+                const itens = await new Promise(res => {
+                    const req = store.getAll();
+                    req.onsuccess = () => res(req.result);
+                });
+                todosOsProdutos = todosOsProdutos.concat(itens);
+            }
+        }
+
+        // 5. Filtra os produtos com base no que foi digitado
+        const termoLimpo = removerAcentosBusca(termo);
+        const resultados = todosOsProdutos.filter(prod => {
+            const tituloLimpo = removerAcentosBusca(prod.tituloproduto.toLowerCase());
+            return tituloLimpo.includes(termoLimpo);
+        });
+
+        // 6. Desenha os resultados na tela
+        dropdown.innerHTML = '';
+        if (resultados.length > 0) {
+            resultados.forEach(prod => {
+                const div = document.createElement('div');
+                div.className = 'item-busca';
+                
+                // Verifica se tem a tag "retiravel" no banco de dados
+                const podeAgendar = prod.tags && prod.tags.includes('retiravel');
+                const tagVisual = podeAgendar 
+                    ? '<span class="tag-agendavel">📅 Disponível para Agendamento</span>' 
+                    : '<span class="tag-loja">🛒 Apenas Loja Física</span>';
+
+                div.innerHTML = `
+                    <img src="${prod.imagem}" alt="${prod.tituloproduto}">
+                    <div class="item-busca-info">
+                        <h4>${prod.tituloproduto}</h4>
+                        ${tagVisual}
+                    </div>
+                `;
+
+                // 7. Evento de clique! O que acontece ao escolher o produto?
+                div.onclick = () => {
+                    if (podeAgendar) {
+                        // Voa direto para a página de agendamento do produto!
+                        window.location.href = `pagina-agendamento.html?id=${prod.id}`;
+                    } else {
+                        // Se não for agendável, envia para o catálogo geral
+                        window.location.href = `pagina-catalogo.html?busca=${termo}`;
+                    }
+                };
+
+                dropdown.appendChild(div);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            // Se não achar nada
+            dropdown.innerHTML = '<div style="padding: 20px; text-align: center; color: #A89F98; font-weight: 700;">Nenhum produto encontrado. 😕</div>';
+            dropdown.style.display = 'block';
+        }
+
+    } catch (erro) {
+        console.log("Banco de dados ainda não inicializado ou erro na busca:", erro);
+    }
+}
+
+// Fechar o menu suspenso ao clicar em qualquer outro lugar da tela
+document.addEventListener('click', (event) => {
+    const dropdown = document.getElementById('dropdown-resultados');
+    const inputBusca = document.getElementById('input-busca');
+    
+    if (dropdown && event.target !== inputBusca && !dropdown.contains(event.target)) {
+        dropdown.style.display = 'none';
+    }
+});
