@@ -41,11 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Redireciona para a home após 2 segundos
                 setTimeout(() => {
-                    window.location.href = 'padaria-landingpage.html';
+                    window.location.href = 'padaria-landinpage.html';
                 }, 2000);
             } else {
                 alert('Cadastro realizado com sucesso!');
-                window.location.href = 'padaria-landingpage.html';
+                window.location.href = 'padaria-landinpage.html';
             }
         });
     }
