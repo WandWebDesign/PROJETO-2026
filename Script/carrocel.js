@@ -1,47 +1,103 @@
 /* =======================================================
-   CARROSSEL DE PRODUTOS (Vitrine Elegante)
+   SISTEMA DE CARROSSEL DINIZ PREMIUM (v2.0)
+   Funcionalidades: Responsivo, Snap CSS, Loop Infinito, Autoplay
 ======================================================= */
 
-// Função que cria a interatividade para cada carrossel da página
-function inicializarCarrossel(seletorCarrossel) {
-    // Busca a seção específica (ex: #carrossel-padaria)
-    const carrossel = document.querySelector(seletorCarrossel);
+// Função para formatar moedas (reutilizável)
+function formatarDiniz(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
-    // Proteção: Se não achar o carrossel, a função para aqui e evita erros
-    if (!carrossel) return;
+// Inicializa todos os carrosséis na página
+function inicializarCarrosseis() {
+    const todosCarrosseis = document.querySelectorAll('.grid-produtos');
 
-    // Encontra os elementos internos deste carrossel
-    const conjunto = carrossel.querySelector('.carrossel-conjunto');
-    const btnAntes = carrossel.querySelector('.botao-antes');
-    const btnDepois = carrossel.querySelector('.botao-depois');
-
-    // Se faltar a lista de itens ou os botões, não faz nada
-    if (!conjunto || !btnAntes || !btnDepois) return;
-
-    // Ação do botão "Avançar" (>)
-    btnDepois.addEventListener('click', () => {
-        // Pega a largura exata da área visível no momento
-        const rolagem = conjunto.clientWidth; 
+    todosCarrosseis.forEach(carousel => {
+        const track = carousel.querySelector('.carrossel-conjunto');
+        const antesBtn = carousel.querySelector('.botao-antes');
+        const depoisBtn = carousel.querySelector('.botao-depois');
         
-        // Manda o container rolar para a direita suavemente
-        conjunto.scrollBy({ left: rolagem, behavior: 'smooth' });
-    });
+        // Proteção caso falte algum elemento no HTML
+        if (!track || !antesBtn || !depoisBtn) return;
 
-    // Ação do botão "Voltar" (<)
-    btnAntes.addEventListener('click', () => {
-        const rolagem = conjunto.clientWidth;
-        
-        // Manda o container rolar para a esquerda (valor negativo)
-        conjunto.scrollBy({ left: -rolagem, behavior: 'smooth' });
+        // Configurações GOURMET
+        let autoPlayInterval;
+        const tempoAutoPlay = 4000; // 4 segundos entre as rolagens
+
+        /* =========================================
+           Lógica do Loop Infinito/Cíclico
+        ========================================= */
+        function rolar(direcao) {
+            const itens = track.querySelectorAll('.card-produtos');
+            if (itens.length === 0) return;
+
+            // Pega a largura do primeiro item para saber exatamente quanto rolar (Responsivo!)
+            const itemWidth = itens[0].offsetWidth; 
+            const gap = 15; // Gap definido no CSS (precisa ser igual)
+            const scrollStep = itemWidth + gap;
+
+            const maxScroll = track.scrollWidth - track.clientWidth;
+            const currentScroll = track.scrollLeft;
+
+            if (direcao === 'proximo') {
+                // Se chegou ao fim total, volta ao início instantaneamente (para o loop parecer fluido)
+                if (currentScroll >= (maxScroll - 5)) { // "-5" para lidar com arredondamentos de pixels
+                    track.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    // Rola suavemente para o próximo item
+                    track.scrollBy({ left: scrollStep, behavior: 'smooth' });
+                }
+            } else if (direcao === 'anterior') {
+                // Se está no início total, vai para o fim instantaneamente
+                if (currentScroll <= 5) {
+                    track.scrollTo({ left: maxScroll, behavior: 'smooth' });
+                } else {
+                    // Rola para o item anterior
+                    track.scrollBy({ left: -scrollStep, behavior: 'smooth' });
+                }
+            }
+        }
+
+        /* =========================================
+           Eventos de Clique
+        ========================================= */
+        depoisBtn.addEventListener('click', () => {
+            rolar('proximo');
+            resetAutoPlay(); // Cliente clicou, paramos o autoplay por enquanto
+        });
+
+        antesBtn.addEventListener('click', () => {
+            rolar('anterior');
+            resetAutoPlay(); // Cliente clicou, paramos o autoplay por enquanto
+        });
+
+        /* =========================================
+           Lógica de Autoplay Inteligente
+        ========================================= */
+        function startAutoPlay() {
+            autoPlayInterval = setInterval(() => {
+                rolar('proximo');
+            }, tempoAutoPlay);
+        }
+
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+        }
+
+        function resetAutoPlay() {
+            stopAutoPlay();
+            startAutoPlay(); // Recomeça a contagem após a interação do cliente
+        }
+
+        // --- PAUSA AO PASSAR O RATO (MOUSE) ---
+        // Se o cliente quer ler o produto, o carrossel não pode rolar sozinho!
+        carousel.addEventListener('mouseenter', stopAutoPlay);
+        carousel.addEventListener('mouseleave', startAutoPlay);
+
+        // Inicializa o Autoplay
+        startAutoPlay();
     });
 }
 
-// Quando o navegador terminar de ler todo o HTML, ele "liga" os carrosséis
-document.addEventListener('DOMContentLoaded', () => {
-    inicializarCarrossel('#carrossel-peça-e-retire');
-    inicializarCarrossel('#carrossel-ofertas');
-    inicializarCarrossel('#carrossel-padaria');
-    inicializarCarrossel('#carrossel-açougue');
-    inicializarCarrossel('#carrossel-hortifruti');
-    inicializarCarrossel('#carrossel-mercado');
-});
+// Executa assim que o HTML carregar
+document.addEventListener('DOMContentLoaded', inicializarCarrosseis);
