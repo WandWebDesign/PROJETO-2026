@@ -100,10 +100,12 @@ body {
 }
 
 /* Barra de Busca */
+/* Barra de Busca e Container Relativo */
 .busca-container {
     flex-grow: 1;
     max-width: 400px;
     margin-right: 1rem;
+    position: relative; /* CRUCIAL: Mantém o menu suspenso preso à barra */
 }
 
 #input-busca {
@@ -111,15 +113,11 @@ body {
     font-family: 'Nunito', sans-serif;
     padding: 10px 20px;
     border-radius: 30px;
-    background-color: #F8F5F2; /* Cinza bem clarinho/creme */
+    background-color: #F8F5F2;
     border: 1px solid transparent;
     font-size: 1rem;
     color: var(--cafe-escuro);
     transition: var(--transicao);
-}
-
-#input-busca::placeholder {
-    color: #A89F98;
 }
 
 #input-busca:focus {
@@ -127,6 +125,62 @@ body {
     background-color: var(--branco);
     box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
 }
+
+/* =======================================================
+   NOVO: MENU SUSPENSO DE PESQUISA (Dropdown)
+======================================================= */
+.busca-dropdown {
+    position: absolute;
+    top: 110%; /* Fica logo abaixo do input */
+    left: 0;
+    width: 100%;
+    background: var(--branco);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none; /* Escondido por padrão */
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Estilo de cada produto na lista */
+.item-busca {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.item-busca:hover {
+    background: var(--creme-fundo);
+}
+
+.item-busca img {
+    width: 45px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.item-busca-info h4 {
+    margin: 0 0 3px 0;
+    color: var(--cafe-escuro);
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.item-busca-info span {
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.tag-agendavel { color: #4CAF50; } /* Verde para agendável */
+.tag-loja { color: #A89F98; } /* Cinza para itens normais */
 
 /* Links do Menu (Meus Pedidos, Login) */
 .menu-principal a {
