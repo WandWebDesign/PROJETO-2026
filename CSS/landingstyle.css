@@ -198,7 +198,7 @@
     opacity: 0;
     position: absolute;
     top: 50%;
-    right: 30px; /* Move para o lado direito do texto */
+    right: 25px; /* Move para o lado direito do texto */
     transform: translateY(-50%) translateX(-10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     font-size: 1.8rem;
