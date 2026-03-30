@@ -185,26 +185,38 @@ body {
     border-bottom: 1px solid rgba(0,0,0,0.05);
     position: sticky;
     top: var(--header-height);
-    z-index: 98;
+    z-index: 98; /* Fica abaixo do z-index 100 do header principal */
     width: 100%;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    
+    /* ADICIONADO: Tempo da animação para quando ele esconder/aparecer */
+    transition: transform 0.4s cubic-bezier(0.3, 1, 0.3, 1);
+}
+
+/* CLASSE MÁGICA: O JavaScript vai adicionar isto para esconder o menu */
+.menu-categorias.esconder-menu {
+    /* Sobe o menu para fora da tela (vai deslizar por trás do header branco) */
+    transform: translateY(-150%);
 }
 
 .escolhas {
     list-style-type: none;
     display: flex;
-    justify-content: flex-start; /* Alinhado à esquerda para scroll */
+    
+    /* ALTERADO: De flex-start para center */
+    justify-content: center; 
+    
     align-items: center;
     overflow-x: auto;
-    scrollbar-width: none; /* Esconde barra de rolagem no Firefox */
-    -ms-overflow-style: none; /* Esconde barra de rolagem no IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     padding: 10px 2rem;
     max-width: 1400px;
     margin: 0 auto;
 }
 
 .escolhas::-webkit-scrollbar {
-    display: none; /* Esconde barra de rolagem no Chrome/Safari */
+    display: none;
 }
 
 .escolhas li {
@@ -303,5 +315,12 @@ body {
 
     .escolhas p {
         font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .escolhas {
+        /* No telemóvel, voltamos ao flex-start para permitir rolar a lista lateralmente sem cortar os itens da esquerda */
+        justify-content: flex-start;
     }
 }
