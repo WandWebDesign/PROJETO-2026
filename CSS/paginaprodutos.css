@@ -181,6 +181,40 @@
     box-shadow: 0 4px 15px rgba(74, 59, 50, 0.2);
 }
 
+/* Botão "Voltar às Compras" */
+.btn-voltar-compras {
+    width: 100%;
+    padding: 14px;
+    background-color: transparent;
+    color: var(--cafe-escuro);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 2px solid var(--cafe-escuro);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-voltar-compras:hover {
+    background-color: var(--cafe-escuro);
+    color: var(--branco);
+}
+
+/* Ajuste do botão para o Modo Escuro */
+body.dark-mode .btn-voltar-compras {
+    color: #E8E0D5;
+    border-color: #E8E0D5;
+}
+
+body.dark-mode .btn-voltar-compras:hover {
+    background-color: #E8E0D5;
+    color: #1A110D;
+}
+
 /* =======================================================
    ESTADO VAZIO DO CARRINHO
 ======================================================= */

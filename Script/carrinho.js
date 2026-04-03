@@ -54,7 +54,7 @@ function renderizarPaginaCarrinho() {
         containerLista.innerHTML += cardHTML;
     });
 
-    // AQUI INJETAMOS AS FORMAS DE PAGAMENTO NO RESUMO DO CHECKOUT!
+// AQUI INJETAMOS AS FORMAS DE PAGAMENTO NO RESUMO DO CHECKOUT!
     containerResumo.innerHTML = `
         <h2>Resumo do Pedido</h2>
         
@@ -90,26 +90,72 @@ function renderizarPaginaCarrinho() {
         </div>
         
         <button class="btn-comprar-tudo" onclick="finalizarCompra(${valorTotal}, ${totalItens})">Finalizar Compra</button>
+        
+        <button class="btn-voltar-compras" onclick="window.location.href='padaria-landinpage.html'">Voltar às Compras</button>
+        
         <button class="btn-remover-checkout" style="width:100%; margin-top:15px; text-align:center;" onclick="limparCarrinhoCompleto()">Esvaziar Carrinho</button>
     `;
 }
 
+/* =======================================================
+   NOVA LÓGICA DE REMOÇÃO COM MODAL PERSONALIZADO
+======================================================= */
+let indiceRemocaoAtual = null; // Guarda o item que o usuário clicou
+let limparTudo = false; // Define se vamos apagar tudo ou só um item
+
 function removerItemCheckout(index) {
-    let itensCarrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
-    if (confirm(`Tem certeza que deseja remover este item?`)) {
-        itensCarrinho.splice(index, 1);
-        localStorage.setItem('carrinho', JSON.stringify(itensCarrinho));
-        renderizarPaginaCarrinho();
-        if(typeof atualizarInterfaceCarrinho === 'function') atualizarInterfaceCarrinho();
-        mostrarToast('Item removido do carrinho!');
-    }
+    indiceRemocaoAtual = index;
+    limparTudo = false;
+    
+    // Altera os textos do modal para o cenário de um item
+    document.getElementById('titulo-modal-remocao').innerText = '⚠️ Remover Item?';
+    document.getElementById('texto-modal-remocao').innerText = 'Tem certeza que deseja retirar este item do seu pedido?';
+    
+    // Abre o Modal Visual
+    document.getElementById('modal-remover-item').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Trava o scroll do fundo
 }
 
 function limparCarrinhoCompleto() {
-    if (confirm("Tem certeza que deseja apagar todos os itens do seu carrinho?")) {
+    limparTudo = true;
+    
+    // Altera os textos do modal para o cenário drástico
+    document.getElementById('titulo-modal-remocao').innerText = '⚠️ Esvaziar Carrinho?';
+    document.getElementById('texto-modal-remocao').innerText = 'Tem certeza que deseja apagar TODOS os itens do seu pedido?';
+    
+    // Abre o Modal Visual
+    document.getElementById('modal-remover-item').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function fecharModalRemocao() {
+    document.getElementById('modal-remover-item').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Volta a permitir rolagem
+    indiceRemocaoAtual = null;
+    limparTudo = false;
+}
+
+function confirmarRemocao() {
+    let itensCarrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    
+    // Se for para limpar tudo
+    if (limparTudo) {
         localStorage.removeItem('carrinho');
-        renderizarPaginaCarrinho();
-        if(typeof atualizarInterfaceCarrinho === 'function') atualizarInterfaceCarrinho();
+        if(typeof mostrarToast === 'function') mostrarToast('Carrinho esvaziado com sucesso!');
+    } 
+    // Se for para remover apenas 1 item
+    else if (indiceRemocaoAtual !== null) {
+        itensCarrinho.splice(indiceRemocaoAtual, 1);
+        localStorage.setItem('carrinho', JSON.stringify(itensCarrinho));
+        if(typeof mostrarToast === 'function') mostrarToast('Item removido!');
+    }
+    
+    fecharModalRemocao();
+    renderizarPaginaCarrinho();
+    
+    // Sincroniza com o número do carrinho no cabeçalho
+    if(typeof atualizarInterfaceCarrinho === 'function') {
+        atualizarInterfaceCarrinho();
     }
 }
 
