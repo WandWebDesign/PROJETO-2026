@@ -44,7 +44,7 @@ function buscarTodosProdutos(db) {
 /* ================================================= */
 
 // 3. Função que desenha o HTML de um único produto
-function criarCardHTML(id, produto) {
+function criarCardHTML(id, produto, idCarrossel) {
     const nomeSetor = produto.setor.charAt(0).toUpperCase() + produto.setor.slice(1);
     
     // Configura os preços
@@ -56,13 +56,12 @@ function criarCardHTML(id, produto) {
         precoSecundario = `<p id="texto-info" style="text-decoration: line-through;">R$ ${produto.preco}</p>`;
     }
 
-    // CORREÇÃO 2: Lógica inteligente para as imagens (Antigas vs Novas)
-    let imagemSrc = "./Imagens/Logo.png"; // Fallback caso não tenha imagem
+    // Lógica inteligente para as imagens
+    let imagemSrc = "./Imagens/Logo.png"; 
     if (produto.imagens && produto.imagens.length > 0) {
-        imagemSrc = produto.imagens[0]; // Pega a primeira foto do array do novo Admin
+        imagemSrc = produto.imagens[0]; 
     } else if (produto.imagem) {
-        imagemSrc = produto.imagem; // Pega a foto do sistema antigo
-        // Se a imagem veio do admin com o caminho errado ("../../Imagens..."), nós consertamos
+        imagemSrc = produto.imagem; 
         if (imagemSrc.startsWith('../../')) {
             imagemSrc = './' + imagemSrc.substring(6);
         }
@@ -70,7 +69,9 @@ function criarCardHTML(id, produto) {
 
     // Configura o botão de agendar
     let botaoHTML = "";
-    if (produto.tags && produto.tags.includes("retiravel")) {
+    
+    // O botão só será criado SE o produto for retirável E a seção atual for a de "Peça e Retire"
+    if (produto.tags && produto.tags.includes("retiravel") && idCarrossel === "carrossel-peça-e-retire") {
         botaoHTML = `<a href="pagina-agendamento.html?id=${id}" class="botao-comprar" style="text-decoration: none;">Agendar</a>`;
     }
 
@@ -95,7 +96,8 @@ function popularCarrossel(idCarrossel, produtosFiltrados) {
     container.innerHTML = ""; 
     
     produtosFiltrados.forEach(([id, produto]) => {
-        container.innerHTML += criarCardHTML(id, produto);
+        // PASSAMOS O idCarrossel PARA A FUNÇÃO CRIAR O CARD SABER ONDE ESTÁ
+        container.innerHTML += criarCardHTML(id, produto, idCarrossel);
     });
 }
 
