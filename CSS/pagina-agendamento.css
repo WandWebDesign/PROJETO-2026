@@ -198,17 +198,26 @@
     margin-bottom: 20px;
 }
 
+/* Label e input de data lado a lado */
+.container-data {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .container-data label, .container-pagamento > label {
     font-family: 'Nunito', sans-serif;
     font-weight: 800;
     font-size: 1.1rem;
-    margin-bottom: 15px;
-    display: block;
+    margin-bottom: 0;       /* Remove o espaço inferior que empurrava o input para baixo */
+    display: inline;        /* Deixa o label fluir ao lado do input */
     color: var(--cafe-escuro);
+    white-space: nowrap;    /* Impede que o texto quebre no meio */
+    flex-shrink: 0;         /* Garante que o label nunca encolha */
 }
 
 .container-data input[type="date"] {
-    width: 100%;
+    flex: 1;                /* O input ocupa o espaço restante da linha */
     padding: 12px 20px;
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 50px;
