@@ -251,36 +251,89 @@ body.dark-mode .btn-agendar:hover {
 /* =======================================================
    RESPONSIVIDADE
 ======================================================= */
+/* =======================================================
+   RESPONSIVIDADE REFINADA - PÁGINA DE CATÁLOGO
+======================================================= */
 @media (max-width: 768px) {
-    .setor-linha-titulo {
-        flex-direction: column;
-        gap: 1.5rem;
-        text-align: center;
-    }
-    
-    #titulo-setor {
-        font-size: 2.2rem;
+    /* Ajuste do espaçamento principal */
+    .main-catalogo {
+        padding: 1.5rem 1rem;
     }
 
-    .btn-voltar {
+    /* Cabeçalho do Setor (Título e Botão Voltar) */
+    .setor-cabecalho {
+        margin: 0 auto 25px auto;
+    }
+
+    .setor-linha-titulo {
+        flex-direction: column; /* Coloca título sobre o botão */
+        gap: 15px;
+        text-align: center;
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    #titulo-setor {
+        font-size: 1.8rem; /* Título mais discreto */
         width: 100%;
     }
 
+    .btn-voltar {
+        width: 100%; /* Botão ocupa a largura toda para facilitar o clique */
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+
+    /* Barra de Busca */
+    .setor-busca {
+        margin-top: 10px;
+    }
+
+    #barra-busca {
+        padding: 12px 20px;
+        font-size: 1rem;
+    }
+
+    /* Grade de Produtos - A Mágica das 2 Colunas */
     #container-produtos {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* 2 colunas no celular */
-        gap: 15px;
+        /* Força exatamente 2 colunas lado a lado */
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 12px; /* Espaço uniforme entre cards */
+        padding: 5px 0;
+    }
+
+    /* Estilo dos Cards no Mobile */
+    .card-container {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .card-produto img {
+        height: 110px; /* Imagem menor para dar foco ao preço e nome */
+        margin-bottom: 0.8rem;
     }
 
     .card-produto h3 {
-        font-size: 1.1rem;
+        font-size: 0.95rem; /* Texto menor e mais legível */
+        min-height: 2.4rem; /* Garante que os botões fiquem alinhados */
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* Corta o texto em 2 linhas se for muito longo */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
+    /* Preços e Botões */
     .preco-normal, .preco-oferta {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
-    
+
+    .preco-antigo {
+        font-size: 0.85rem;
+    }
+
     .btn-agendar {
         font-size: 0.8rem;
-        padding: 8px 0;
+        padding: 10px 0;
+        letter-spacing: 0.5px;
     }
 }
