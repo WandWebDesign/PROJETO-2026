@@ -341,3 +341,61 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 }
 
 .msg-vazia { color: var(--cafe-claro); font-style: italic; grid-column: 1 / -1; }
+
+/* ================== MODAL DE EXCLUSÃO (PEQUENO) ================== */
+/* Reaproveitamos o modal-box, mas ajustamos o tamanho para ficar como um alerta */
+.modal-pequeno {
+    width: 90%;
+    max-width: 450px; /* Largura máxima mais contida */
+    height: auto;     /* Altura adapta-se ao texto, sem esticar */
+    text-align: center;
+    padding: 40px 30px;
+    align-items: center; /* Centraliza tudo no meio */
+}
+
+.icone-alerta {
+    font-size: 4rem;
+    margin-bottom: 15px;
+}
+
+.titulo-excluir {
+    font-size: 1.8rem;
+    color: var(--cafe-escuro);
+    font-weight: 900;
+    margin-bottom: 15px;
+}
+
+.modal-pequeno p {
+    font-size: 1.1rem;
+    color: var(--cafe-claro);
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.footer-excluir {
+    width: 100%;
+    display: flex;
+    gap: 15px;
+    margin-top: 0;
+    justify-content: center;
+}
+
+/* Botão Vermelho para confirmar o perigo */
+.btn-excluir-confirmar {
+    flex: 1;
+    background: var(--vermelho-alerta);
+    color: var(--branco);
+    border: none;
+    padding: 15px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-excluir-confirmar:hover {
+    background: #c9302c; /* Vermelho mais escuro no hover */
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(217, 83, 79, 0.4);
+}

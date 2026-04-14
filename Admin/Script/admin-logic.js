@@ -80,19 +80,48 @@ function desenharGradeAdmin(produtos) {
 }
 
 // 3. EXCLUIR
-async function apagarProduto(idProduto, setorProduto) {
-    if (!confirm("Tem certeza que deseja APAGAR este produto permanentemente?")) return;
+// =======================================================
+// 3. EXCLUIR (Com Modal Personalizado)
+// =======================================================
+
+// Variáveis para "lembrar" qual produto o utilizador quer apagar
+let produtoParaApagarId = null;
+let produtoParaApagarSetor = null;
+
+// Esta função agora apenas ABRIRÁ o nosso pop-up bonitinho
+function apagarProduto(idProduto, setorProduto) {
+    // Guarda as informações na memória
+    produtoParaApagarId = idProduto;
+    produtoParaApagarSetor = setorProduto;
+    
+    // Mostra o pop-up
+    document.getElementById('modal-excluir').style.display = 'flex';
+}
+
+// Se o utilizador desistir
+function fecharModalExcluir() {
+    document.getElementById('modal-excluir').style.display = 'none';
+    produtoParaApagarId = null;
+    produtoParaApagarSetor = null;
+}
+
+// Se o utilizador clicar no botão vermelho "Sim, Excluir"
+async function confirmarExclusao() {
+    // Segurança: Se não há produto gravado na memória, não faz nada
+    if (!produtoParaApagarId || !produtoParaApagarSetor) return;
 
     try {
         const db = await abrirBancoAdmin();
-        const tx = db.transaction(setorProduto, 'readwrite');
-        const store = tx.objectStore(setorProduto);
+        const tx = db.transaction(produtoParaApagarSetor, 'readwrite');
+        const store = tx.objectStore(produtoParaApagarSetor);
         
-        store.delete(idProduto);
+        // Exclui do banco de dados
+        store.delete(produtoParaApagarId);
 
         tx.oncomplete = () => {
-            if(typeof mostrarToast === 'function') mostrarToast("Produto excluído!");
-            carregarSetorAdmin(setorProduto);
+            fecharModalExcluir(); // Fecha o pop-up
+            if(typeof mostrarToast === 'function') mostrarToast("Produto excluído com sucesso!");
+            carregarSetorAdmin(produtoParaApagarSetor); // Recarrega a grelha
         };
     } catch (erro) {
         alert("Erro ao excluir produto.");
