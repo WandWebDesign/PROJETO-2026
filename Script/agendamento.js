@@ -1,129 +1,216 @@
-document.addEventListener("DOMContentLoaded", () => {
+/* =======================================================
+   LÓGICA DA PÁGINA DE AGENDAMENTO (Unificada com o Banco)
+======================================================= */
 
-    // 1. Pega o ID do produto da URL (Ex: ?id=pãofrances)
-    const urlParams = new URLSearchParams(window.location.search);
-    const produtoId = urlParams.get('id');
+const DB_NAME = "PadariaDB_V5";
+const DB_VERSION = 3;
+const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
 
-    // 2. Banco de dados de produtos
-    const produtos = {
-        "pãofrances":      { nome: "Pão Francês",       preco: 0.80, desc: "Pão quentinho, feito na hora! Preço por Unidade.",           img: "./Imagens/PãoFrances.webp" },
-        "coxinhadefrango": { nome: "Coxinha de Frango", preco: 8.50, desc: "Salgado frito na hora. Preço por unidade.",                   img: "./Imagens/Coxinha de Frango .webp" },
-        "pãodequeijo":     { nome: "Pão de Queijo",     preco: 3.00, desc: "Tradicional de Minas. Preço por unidade.",                    img: "./Imagens/Pão de Queijo .webp" },
-        "esfirradecarne":  { nome: "Esfiha de Carne",   preco: 8.50, desc: "Massa macia e recheio de carne temperada. Preço por unidade.", img: "./Imagens/Esfirra de Carne.webp" },
-        "mussarela":       { nome: "Mussarela Fatiada", preco: 5.99, desc: "Queijo mussarela fatiado fino. (Quantidade 1 = 100g)",         img: "./Imagens/Mussarela.webp" },
-        "mortandela":      { nome: "Mortadela Fatiada", preco: 4.49, desc: "Mortadela fresca. (Quantidade 1 = 100g)",                      img: "./Imagens/Mortandela.webp" },
-        "presunto":        { nome: "Presunto Fatiado",  preco: 5.49, desc: "Presunto magro fatiado. (Quantidade 1 = 100g)",                img: "./Imagens/Presunto.webp" },
-        "bolodefuba":      { nome: "Bolo de Fubá",      preco: 7.50, desc: "Bolo caseiro da vovó. Preço por fatia.",                       img: "./Imagens/Bolo de fubá.webp" },
-        "bolodemilho":     { nome: "Bolo de Milho",     preco: 7.50, desc: "Bolo cremoso de milho. Preço por fatia.",                      img: "./Imagens/Bolo de Milho.webp" },
-        "pãodeleite":      { nome: "Pão de Leite",      preco: 1.50, desc: "Pão de leite macio e saboroso, perfeito para o café.",        img: "./Imagens/Pão de Leite .webp" }
-    };
+let produtoAtual = null; 
+let quantidade = 1;      
 
-    const produtoAtual = produtos[produtoId];
-    let quantidade = 1;
+// 1. Pegar o ID do produto pela URL
+const urlParams = new URLSearchParams(window.location.search);
+const idProduto = urlParams.get("id");
 
-    // 3. Preencher a tela com as informações do produto
-    if (produtoAtual) {
-        document.getElementById("tituloproduto").innerText = produtoAtual.nome;
-        document.getElementById("descricao").innerText = produtoAtual.desc;
-        document.getElementById("produtoimagem").src = produtoAtual.img;
-        atualizarPrecoFinal();
+// 2. Conectar ao Banco
+function conectarBanco() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = () => reject("Erro ao abrir banco de dados.");
+    });
+}
+
+// 3. Procurar o Produto no IndexedDB
+async function buscarProduto(id) {
+    if (!id) return null;
+    try {
+        const db = await conectarBanco();
+        for (let setor of SETORES_DO_BANCO) {
+            const produto = await new Promise((resolve) => {
+                if (!db.objectStoreNames.contains(setor)) return resolve(null);
+                const tx = db.transaction(setor, "readonly");
+                const store = tx.objectStore(setor);
+                const req = store.get(id);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+            if (produto) return produto; 
+        }
+        return null; 
+    } catch (erro) {
+        console.error("Erro na busca:", erro);
+        return null;
+    }
+}
+
+// 4. Transformar o Preço em Número
+function extrairNumeroPreco(textoPreco) {
+    if (!textoPreco) return 0;
+    const valor = textoPreco.toString().split('/')[0].trim().replace(',', '.');
+    return parseFloat(valor);
+}
+
+// 5. RENDERIZAR A TELA (Mágica das Imagens)
+async function carregarTela() {
+    produtoAtual = await buscarProduto(idProduto);
+
+    if (!produtoAtual) {
+        document.getElementById('tituloproduto').innerText = "Produto não encontrado.";
+        return;
+    }
+
+    // --- Textos Básicos ---
+    document.getElementById('tituloproduto').innerText = produtoAtual.tituloproduto;
+    document.getElementById('descricao').innerText = `Excelente escolha da nossa categoria de ${produtoAtual.setor}. Produto fresco preparado especialmente para você!`;
+    
+    atualizarPrecoTotal();
+
+    // --- Lógica da Galeria de Imagens ---
+    const imgPrincipal = document.getElementById('produtoimagem');
+    const containerMiniaturas = document.getElementById('container-miniaturas');
+    
+    let listaImagens = [];
+    if (produtoAtual.imagens && produtoAtual.imagens.length > 0) {
+        listaImagens = produtoAtual.imagens; // Novo formato (4 a 6 fotos)
+    } else if (produtoAtual.imagem) {
+        // Formato antigo fallback
+        let imgOld = produtoAtual.imagem;
+        if(imgOld.startsWith('../../')) imgOld = './' + imgOld.substring(6);
+        else if(imgOld.startsWith('./')) imgOld = '.' + imgOld; 
+        listaImagens = [imgOld];
+    }
+
+    if (listaImagens.length > 0) {
+        imgPrincipal.src = listaImagens[0];
+        if(containerMiniaturas) {
+            containerMiniaturas.innerHTML = '';
+            listaImagens.forEach((fotoSrc) => {
+                const imgMini = document.createElement('img');
+                imgMini.src = fotoSrc;
+                imgMini.alt = "Miniatura do produto";
+                
+                // Estilo das miniaturas
+                imgMini.style.cursor = 'pointer';
+                imgMini.style.width = '70px';
+                imgMini.style.height = '70px';
+                imgMini.style.objectFit = 'cover';
+                imgMini.style.borderRadius = '8px';
+                imgMini.style.border = '2px solid transparent';
+                imgMini.style.transition = '0.3s';
+                
+                // Evento para trocar a foto principal
+                imgMini.onclick = function() {
+                    Array.from(containerMiniaturas.children).forEach(m => m.style.borderColor = 'transparent');
+                    this.style.borderColor = 'var(--dourado-suave)';
+                    imgPrincipal.src = this.src;
+                };
+
+                containerMiniaturas.appendChild(imgMini);
+            });
+            // Marca a primeira como ativa visualmente
+            if(containerMiniaturas.firstChild) {
+                containerMiniaturas.firstChild.style.borderColor = 'var(--dourado-suave)';
+            }
+        }
     } else {
-        document.getElementById("tituloproduto").innerText = "Produto não encontrado";
+        imgPrincipal.src = "./Imagens/Logo.png";
+    }
+}
+
+// 6. Controles de Quantidade
+function atualizarPrecoTotal() {
+    const precoString = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
+    const precoUnitario = extrairNumeroPreco(precoString);
+    const total = precoUnitario * quantidade;
+
+    document.getElementById('preço-final').innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('Qtd').innerText = quantidade;
+}
+
+document.getElementById('plus-btn').addEventListener('click', () => {
+    quantidade++;
+    atualizarPrecoTotal();
+});
+
+document.getElementById('ret-btn').addEventListener('click', () => {
+    if (quantidade > 1) {
+        quantidade--;
+        atualizarPrecoTotal();
+    }
+});
+
+// 7. LÓGICA DO BOTÃO DE AGENDAR (CARRINHO)
+const btnAgendar    = document.getElementById("btn-agendar-final");
+const containerData = document.getElementById("data-picker-container");
+const inputData     = document.getElementById("data-retirada");
+
+// Configurar a data mínima para amanhã
+const amanha = new Date();
+amanha.setDate(amanha.getDate() + 1);
+if(inputData) inputData.min = amanha.toISOString().split("T")[0];
+
+let etapa = "escolher-data";
+
+btnAgendar.addEventListener("click", () => {
+    if (etapa === "escolher-data") {
+        containerData.style.display = "flex";
+        btnAgendar.innerText = "Confirmar Agendamento";
+        etapa = "confirmar";
+        return;
     }
 
-    // 4. Botões de + e -
-    const btnMais = document.getElementById("plus-btn");
-    const btnMenos = document.getElementById("ret-btn");
-    const displayQuantidade = document.getElementById("Qtd");
-
-    btnMais.addEventListener("click", () => {
-        quantidade++;
-        displayQuantidade.innerText = quantidade;
-        atualizarPrecoFinal();
-    });
-
-    btnMenos.addEventListener("click", () => {
-        if (quantidade > 1) {
-            quantidade--;
-            displayQuantidade.innerText = quantidade;
-            atualizarPrecoFinal();
-        }
-    });
-
-    // 5. Cálculo do preço total
-    function atualizarPrecoFinal() {
-        if (produtoAtual) {
-            const total = quantidade * produtoAtual.preco;
-            document.getElementById("preço-final").innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // 6. Botão "Escolher Data" → "Confirmar Agendamento"
-    //    DEVE ficar aqui dentro para acessar produtoId, produtoAtual e quantidade
-    // ─────────────────────────────────────────────────────────────
-    const btnAgendar    = document.getElementById("btn-agendar-final");
-    const containerData = document.getElementById("data-picker-container");
-    const inputData     = document.getElementById("data-retirada");
-
-    // Data mínima = amanhã
-    const amanha = new Date();
-    amanha.setDate(amanha.getDate() + 1);
-    inputData.min = amanha.toISOString().split("T")[0];
-
-    let etapa = "escolher-data";
-
-    btnAgendar.addEventListener("click", () => {
-
-        // — Passo 1: mostrar o seletor de data —
-        if (etapa === "escolher-data") {
-            containerData.style.display = "flex";
-            btnAgendar.innerText = "Confirmar Agendamento";
-            etapa = "confirmar";
+    if (etapa === "confirmar") {
+        if (!localStorage.getItem("usuarioLogado")) {
+            if(typeof mostrarToast === 'function') mostrarToast("Faça login para agendar!");
+            else alert("Faça login para agendar!");
             return;
         }
 
-        // — Passo 2: confirmar e salvar no carrinho —
-        if (etapa === "confirmar") {
-
-            if (!localStorage.getItem("usuarioLogado")) {
-                mostrarToast("Faça login para agendar!");
-                return;
-            }
-
-            if (!inputData.value) {
-                mostrarToast("Escolha uma data de retirada!");
-                return;
-            }
-
-            
-
-            // Formata dd/mm/aaaa
-            const [ano, mes, dia] = inputData.value.split("-");
-            const dataFormatada = `${dia}/${mes}/${ano}`;
-
-            // Salva no carrinho
-           const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
-            carrinho.push({
-                id:           produtoId,
-                nome:         produtoAtual.nome,
-                preco:        produtoAtual.preco,
-                quantidade:   quantidade,
-                dataRetirada: dataFormatada,
-                img:          produtoAtual.img
-            });
-            localStorage.setItem("carrinho", JSON.stringify(carrinho));
-
-            mostrarToast(`✅ ${produtoAtual.nome} agendado para ${dataFormatada}!`);
-            atualizarInterfaceCarrinho();
-            abrirCarrinho();
-
-            // Reseta o botão
-            containerData.style.display = "none";
-            inputData.value = "";
-            btnAgendar.innerText = "Escolher Data";
-            etapa = "escolher-data";
+        if (!inputData.value) {
+            if(typeof mostrarToast === 'function') mostrarToast("Escolha uma data de retirada!");
+            else alert("Escolha uma data de retirada!");
+            return;
         }
-    });
 
-}); // ← fecha o DOMContentLoaded — bloco 6 está DENTRO ✅
+        // Formata dd/mm/aaaa
+        const [ano, mes, dia] = inputData.value.split("-");
+        const dataFormatada = `${dia}/${mes}/${ano}`;
+
+        // Define a foto que vai para o carrinho
+        let imagemCarrinho = "./Imagens/Logo.png";
+        if (produtoAtual.imagens && produtoAtual.imagens.length > 0) imagemCarrinho = produtoAtual.imagens[0];
+        else if (produtoAtual.imagem) imagemCarrinho = produtoAtual.imagem;
+
+        // Salva no carrinho (localStorage)
+        const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+        const precoString = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
+        
+        carrinho.push({
+            id:           idProduto,
+            nome:         produtoAtual.tituloproduto,
+            preco:        extrairNumeroPreco(precoString),
+            quantidade:   quantidade,
+            dataRetirada: dataFormatada,
+            img:          imagemCarrinho
+        });
+        
+        localStorage.setItem("carrinho", JSON.stringify(carrinho));
+
+        if(typeof mostrarToast === 'function') mostrarToast(`✅ ${produtoAtual.tituloproduto} adicionado ao carrinho!`);
+        
+        // Atualiza e abre o carrinho lateral
+        if(typeof atualizarInterfaceCarrinho === 'function') atualizarInterfaceCarrinho();
+        if(typeof abrirCarrinho === 'function') abrirCarrinho();
+
+        // Reseta o botão e o input
+        containerData.style.display = "none";
+        inputData.value = "";
+        btnAgendar.innerText = "Escolher Data";
+        etapa = "escolher-data";
+    }
+});
+
+// Inicializa tudo quando a página carregar
+document.addEventListener("DOMContentLoaded", carregarTela);
