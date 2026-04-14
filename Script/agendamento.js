@@ -2,7 +2,7 @@
    LÓGICA DA PÁGINA DE AGENDAMENTO (Unificada com o Banco)
 ======================================================= */
 
-const DB_NAME = "PadariaDB_V5";
+const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 3;
 const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
 

@@ -1,7 +1,7 @@
 /* ================================================= */
 /* CONFIGURAÇÃO DO BANCO DE DADOS                    */
 /* ================================================= */
-const DB_NAME = "PadariaDB_V5";
+const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 3; // CORREÇÃO 1: Atualizado para a versão 3!
 const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
 

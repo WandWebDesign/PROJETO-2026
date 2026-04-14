@@ -254,7 +254,7 @@ async function pesquisarProdutos() {
 
     // 3. Conecta ao Banco de Dados (PadariaDB_V5)
     try {
-        const DB_NAME = "PadariaDB_V5";
+        const DB_NAME = "PadariaDB_V6";
         const db = await new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME);
             request.onsuccess = (e) => resolve(e.target.result);

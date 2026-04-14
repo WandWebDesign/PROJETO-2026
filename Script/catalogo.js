@@ -361,7 +361,7 @@ const produtosIniciais = {
 
 // AQUI ESTÁ A MÁGICA: Mudei o nome para V6 para ele forçar a atualização!
 const DB_NAME = "PadariaDB_V6";
-const DB_VERSION = 2; 
+const DB_VERSION = 3; 
 
 function conectarBanco() {
     return new Promise((resolve, reject) => {

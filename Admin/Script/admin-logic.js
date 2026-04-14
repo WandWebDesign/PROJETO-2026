@@ -2,7 +2,7 @@
    LÓGICA ADMINISTRATIVA DO CRUD (IndexedDB)
 ======================================================= */
 
-const DB_NAME = "PadariaDB_V5";
+const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 3;
 let setorAdminAtual = 'padaria'; 
 let imagensTemporarias = []; // Array global para as fotos
