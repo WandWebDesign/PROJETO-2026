@@ -172,15 +172,36 @@ function removerDoCarrinho(index) {
     mostrarToast(`${itemRemovido} removido!`);
 }
 
+/* =========================================
+   CARRINHO: ABRIR E FECHAR COM OVERLAY
+========================================= */
 function abrirCarrinho() {
-    atualizarInterfaceCarrinho(); // Sincroniza logo antes de abrir a gaveta!
+    atualizarInterfaceCarrinho();
     const gaveta = document.getElementById('carrinho-lateral');
+    const overlay = document.getElementById('carrinho-overlay');
+    
     if(gaveta) gaveta.classList.add('aberto');
+    if(overlay) {
+        overlay.style.display = 'block';
+        setTimeout(() => overlay.classList.add('mostrar'), 10);
+    }
+    
+    // Impede o scroll da página de fundo enquanto o carrinho está aberto
+    document.body.style.overflow = 'hidden';
 }
 
 function fecharCarrinho() {
     const gaveta = document.getElementById('carrinho-lateral');
+    const overlay = document.getElementById('carrinho-overlay');
+    
     if(gaveta) gaveta.classList.remove('aberto');
+    if(overlay) {
+        overlay.classList.remove('mostrar');
+        setTimeout(() => overlay.style.display = 'none', 300);
+    }
+    
+    // Devolve o scroll para a página
+    document.body.style.overflow = 'auto';
 }
 
 // Adicione isso ao final do seu funcionalidades.js

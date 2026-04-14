@@ -485,41 +485,113 @@ body.dark-mode .payment-option:hover {
 /* =======================================================
    RESPONSIVIDADE (MOBILE)
 ======================================================= */
+/* =======================================================
+   RESPONSIVIDADE REFINADA - PÁGINA DE AGENDAMENTO
+======================================================= */
 @media (max-width: 768px) {
+    /* Ajuste do espaçamento externo */
+    .main-agendamento {
+        padding: 1.5rem 1rem;
+    }
+
+    /* O Cartão agora vira uma coluna única */
     .container-produtos {
         flex-direction: column;
         padding: 1.5rem;
-        border-radius: 16px;
+        border-radius: 20px;
+        gap: 25px; /* Espaço entre imagem e texto */
     }
 
-    .coluna-da-esquerda, .coluna-da-direita {
-        width: 100%;
+    /* --- COLUNA DE IMAGENS --- */
+    .coluna-da-esquerda {
         max-width: 100%;
+        width: 100%;
     }
 
     .imagem-principal img {
-        height: 250px; /* Foto menor no celular */
+        height: 280px; /* Altura equilibrada para mobile */
+        padding: 15px;
+    }
+
+    .lista-imagens {
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .lista-imagens img {
+        height: 70px; /* Miniaturas menores e proporcionais */
+        border-radius: 8px;
+    }
+
+    /* --- COLUNA DE INFORMAÇÕES --- */
+    .coluna-da-direita {
+        width: 100%;
     }
 
     .titulo-produto {
-        font-size: 2rem;
+        font-size: 1.8rem; /* Título mais amigável */
         text-align: center;
+        margin-bottom: 15px;
     }
 
-    .label-descrição, .Descrição p {
+    .label-descrição {
+        font-size: 1rem;
         text-align: center;
+        display: block;
     }
 
+    .Descrição p {
+        font-size: 1rem;
+        text-align: center;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    /* --- VALORES (QTD E TOTAL) --- */
     .container-valores {
-        flex-direction: column;
+        flex-direction: column; /* Empilha Quantidade sobre Valor Total */
         gap: 15px;
     }
 
+    .preço-box {
+        height: 50px; /* Mais compacto no mobile */
+        width: 100%;
+    }
+
+    /* --- SEÇÃO DE DATA --- */
+    .container-data {
+        flex-direction: column; /* Label em cima, Input em baixo */
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .container-data label {
+        font-size: 1rem;
+    }
+
+    .container-data input[type="date"] {
+        width: 100%; /* Data ocupa a largura toda */
+        font-size: 1rem;
+        padding: 10px 15px;
+    }
+
+    /* --- BOTÕES DE AÇÃO --- */
     .btn-baixo {
-        flex-direction: column-reverse; /* O botão voltar vai para baixo do de agendar */
+        flex-direction: column-reverse; /* "Agendar" fica em cima do "Voltar" */
+        gap: 12px;
+        margin-top: 20px;
     }
 
     .botao-voltar, .botao-agendar {
         width: 100%;
+        padding: 14px;
+        font-size: 1rem;
+    }
+    
+    /* Botão Voltar fica mais discreto no mobile */
+    .botao-voltar {
+        border-width: 1px;
+        font-size: 0.9rem;
     }
 }

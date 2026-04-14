@@ -163,3 +163,90 @@ body.dark-mode .box-regras-cancelamento {
 #modal-cancelamento .modal-box {
     animation: aparecer 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+/* =======================================================
+   RESPONSIVIDADE REFINADA - MEUS PEDIDOS (HISTÓRICO)
+======================================================= */
+@media (max-width: 768px) {
+    /* Ajuste do container principal */
+    .main-historico {
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .titulo-sessao {
+        font-size: 1.8rem;
+        text-align: center;
+    }
+
+    /* Box de Regras no Topo */
+    .box-regras-cancelamento {
+        padding: 1.2rem;
+        margin: 1.5rem 0;
+    }
+
+    .box-regras-cancelamento h3 {
+        font-size: 1rem;
+    }
+
+    .box-regras-cancelamento ul {
+        font-size: 0.85rem;
+    }
+
+    /* --- CARTÃO DE PEDIDO --- */
+    .card-pedido-finalizado {
+        flex-direction: column; /* Empilha as informações e as ações */
+        align-items: stretch;    /* Faz os elementos ocuparem a largura toda */
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .pedido-info {
+        width: 100%;
+        text-align: left;
+    }
+
+    .pedido-info h2 {
+        font-size: 1.3rem;
+        margin-top: 5px;
+    }
+
+    /* Lista de Itens no Mobile */
+    .lista-itens-resumo {
+        margin: 15px 0;
+        font-size: 0.9rem;
+    }
+
+    /* --- ÁREA DE AÇÕES (CÓDIGO E BOTÃO) --- */
+    .acoes-historico {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-top: 1px dashed rgba(0,0,0,0.1);
+        padding-top: 20px;
+    }
+
+    .codigo-tag {
+        width: 100%;
+        text-align: center;
+        font-size: 1.5rem; /* Ajuste para não ficar exagerado */
+        padding: 12px;
+    }
+
+    .btn-cancelar-pedido {
+        width: 100%;
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+
+    .prazo-expirado {
+        font-size: 0.8rem;
+    }
+
+    /* Ajuste do Modal no Mobile */
+    #modal-cancelamento .modal-box {
+        width: 95%;
+        padding: 20px;
+    }
+}

@@ -39,22 +39,41 @@ body.dark-mode #input-busca {
 }
 
 /* =========================================
-   CARRINHO LATERAL (OFF-CANVAS)
+   CARRINHO LATERAL (OFF-CANVAS) - PREMIUM
 ========================================= */
 #carrinho-lateral {
     position: fixed;
     top: 0;
-    right: -400px; /* Escondido fora da tela */
+    right: -100%; /* Começa totalmente fora da tela */
     width: 380px;
-    max-width: 100vw; /* Garante que não quebre em celulares finos */
+    max-width: 100%; /* No mobile, ocupa 100% */
     height: 100vh;
     background-color: var(--branco);
-    box-shadow: -4px 0 25px rgba(0,0,0,0.15);
-    transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação super suave */
-    z-index: 1000;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+    transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 2000; /* Acima de tudo */
     display: flex;
     flex-direction: column;
-    font-family: 'Nunito', sans-serif;
+}
+
+/* OVERLAY (Fundo escuro atrás do carrinho) */
+.carrinho-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px); /* Efeito de vidro fosco no fundo */
+    z-index: 1999;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.carrinho-overlay.mostrar {
+    display: block;
+    opacity: 1;
 }
 
 body.dark-mode #carrinho-lateral {
@@ -103,14 +122,14 @@ body.dark-mode #carrinho-lateral {
     padding: 25px;
 }
 
+/* Itens mais espaçados para o toque no Mobile */
 .item-carrinho {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-    font-size: 1.1rem;
-    color: var(--cafe-escuro);
+    padding: 15px 0;
+    gap: 10px;
 }
 
 body.dark-mode .item-carrinho {
@@ -193,16 +212,42 @@ body.dark-mode .carrinho-footer {
     transform: translateY(0);
 }
 
-@media (max-width: 768px) {
-    #toast-container {
-        left: 20px;
-        right: 20px;
-        bottom: 20px;
-        align-items: center;
+/* =========================================
+   RESPONSIVIDADE DO CARRINHO (MOBILE)
+========================================= */
+@media (max-width: 600px) {
+    #carrinho-lateral {
+        width: 100%; /* Carrinho vira tela cheia no celular */
     }
-    
-    .toast {
-        width: 100%;
-        text-align: center;
+
+    .carrinho-header {
+        padding: 15px 20px;
+    }
+
+    .carrinho-header h2 {
+        font-size: 1.3rem;
+    }
+
+    /* Fechar maior para facilitar o clique */
+    .carrinho-header button {
+        background-color: rgba(255,255,255,0.1);
+        padding: 8px 15px;
+        border-radius: 50px;
+        font-size: 0.9rem;
+    }
+
+    .carrinho-itens {
+        padding: 20px;
+    }
+
+    /* Footer fixo na base para o polegar */
+    .carrinho-footer {
+        padding: 20px;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* Ajuste para iPhones novos */
+    }
+
+    .btn-finalizar {
+        height: 60px; /* Botão bem grande e fácil de clicar */
+        font-size: 1.1rem;
     }
 }

@@ -442,17 +442,113 @@ body.dark-mode .codigo-destaque, body.dark-mode .modal-footer {
 /* =======================================================
    RESPONSIVIDADE (MOBILE)
 ======================================================= */
+/* =======================================================
+   RESPONSIVIDADE REFINADA - CHECKOUT (FINALIZAR)
+======================================================= */
 @media (max-width: 768px) {
+    /* Ajuste do espaçamento da página */
+    .main-checkout {
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+    }
+
+    .titulo-checkout {
+        font-size: 1.8rem; /* Título mais equilibrado */
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Empilhamento das colunas */
     .container-checkout {
         flex-direction: column;
+        gap: 20px;
     }
-    
-    .coluna-lista, .coluna-resumo {
+
+    /* --- LISTA DE PRODUTOS --- */
+    .coluna-lista {
+        width: 100%;
+        order: 1; /* Mantém a lista primeiro */
+    }
+
+    .card-produto-checkout {
+        padding: 15px;
+        border-radius: 12px;
+        flex-direction: column; /* No celular, info e preço ficam em cima/baixo */
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .info-produto {
         width: 100%;
     }
-    
+
+    .info-produto h3 {
+        font-size: 1.1rem;
+    }
+
+    .detalhes-valores {
+        font-size: 0.85rem;
+    }
+
+    .acoes-produto {
+        width: 100%;
+        flex-direction: row; /* Preço e Botão Remover lado a lado no fim do card */
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        padding-top: 10px;
+    }
+
+    .subtotal-item {
+        font-size: 1.2rem;
+    }
+
+    .btn-remover-checkout {
+        font-size: 0.8rem;
+    }
+
+    /* --- COLUNA DE RESUMO --- */
     .coluna-resumo {
-        position: static; /* Tira o efeito de descer com a tela no celular */
-        margin-top: 20px;
+        width: 100%;
+        order: 2;
+        padding: 20px;
+        position: static; /* Remove o sticky no mobile */
+        border-radius: 16px;
+    }
+
+    .coluna-resumo h2 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .linha-resumo {
+        font-size: 1rem;
+    }
+
+    .total-resumo {
+        font-size: 1.5rem;
+        margin: 15px 0;
+    }
+
+    /* Botões de Ação */
+    .btn-comprar-tudo, .btn-voltar-compras {
+        padding: 14px;
+        font-size: 1.1rem;
+    }
+
+    /* --- MODAL DE RECIBO --- */
+    .modal-box {
+        width: 95%; /* Ocupa quase toda a largura para o código ficar visível */
+    }
+
+    .codigo-destaque {
+        font-size: 2rem;
+        padding: 10px;
+        letter-spacing: 2px;
+    }
+
+    .modal-body {
+        padding: 20px;
     }
 }
