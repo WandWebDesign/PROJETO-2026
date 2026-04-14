@@ -367,7 +367,10 @@ function conectarBanco() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        // ... código de onerror mantido ...
+        request.onerror = (event) => {
+            console.error("Erro ao abrir o banco:", event);
+            reject("Erro no DB");
+        };
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
@@ -385,9 +388,7 @@ function conectarBanco() {
 
                 if (SETORES_DO_BANCO.includes(setorDoProduto)) {
                     const store = transaction.objectStore(setorDoProduto);
-                    // 2. MUDE DE store.add PARA store.put
-                    // Assim, toda vez que você mudar um preço ou imagem, ele atualiza!
-                    store.put({ id: chave, ...produto }); 
+                    store.add({ id: chave, ...produto });
                 }
             });
         };
