@@ -6,16 +6,16 @@ const urlParams = new URLSearchParams(window.location.search);
 const setorAtual = urlParams.get("setor");   
 const filtroAtual = urlParams.get("filtro"); 
 
-const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
+const SETORES_DO_BANCO =["padaria", "acougue", "hortifruti", "mercado"];
 
-// Lista de produtos com as tags corretas
+// Lista de produtos com as tags corretas e LOGICA DE PREÇOS ATUALIZADA (Unidade, Fatias e 100g)
 const produtosIniciais = {
     // --- PADARIA ---
     pãofrances: {
         tituloproduto: "Pão Francês",
         imagem: "./Imagens/PãoFrances.webp", 
-        preco: "16,90",
-        precoOferta: "15,90 / Kg",
+        preco: "0,80 / Un",
+        precoOferta: "0,70 / Un",
         setor: "padaria", 
         tags: ["oferta", "retiravel"],
     },
@@ -38,7 +38,7 @@ const produtosIniciais = {
     pãodeleite: {
         tituloproduto: "Pão de Leite",
         imagem: "./Imagens/Pão de Leite .webp", 
-        preco: "22,90 / Kg",
+        preco: "1,50 / Un",
         precoOferta: null,
         setor: "padaria", 
         tags: ["retiravel"]
@@ -46,23 +46,23 @@ const produtosIniciais = {
     esfirradecarne: {
         tituloproduto: "Esfirra de Carne",
         imagem: "./Imagens/Esfirra de Carne.webp",
-        preco: "8,50",
+        preco: "8,50 / Un",
         precoOferta: null,
         setor: "padaria", 
         tags: ["retiravel"]
     },
     bolodefuba: {
-        tituloproduto: "Bolo de Fubá - R$7,50 Fatia",
+        tituloproduto: "Bolo de Fubá",
         imagem: "./Imagens/Bolo de fubá.webp",
-        preco: "45,00 / Un",
+        preco: "7,50 / Fatia",
         precoOferta: null,
         setor: "padaria", 
         tags: ["retiravel"] 
     },
     bolodemilho: {
-        tituloproduto: "Bolo de Milho - R$7,50 Fatia",
+        tituloproduto: "Bolo de Milho",
         imagem: "./Imagens/Bolo de Milho.webp", 
-        preco: "45,00 / Un",
+        preco: "7,50 / Fatia",
         precoOferta: null,
         setor: "padaria", 
         tags: ["retiravel"]
@@ -78,7 +78,7 @@ const produtosIniciais = {
      sonhodecreme: {
         tituloproduto: "Sonho de Creme",
         imagem: "./Imagens/Sonho de Creme.webp",
-        preco: "20,00 / Un",
+        preco: "7,50 / Un",
         precoOferta: null,
         setor: "padaria", 
         tags: null
@@ -86,7 +86,7 @@ const produtosIniciais = {
     tortadefrango: {
         tituloproduto: "Torta de Frango",
         imagem: "./Imagens/TortaDefrango.webp",
-        preco: "20,00 / Un",
+        preco: "8,90 / Fatia",
         precoOferta: null,
         setor: "padaria", 
         tags: null
@@ -226,7 +226,7 @@ const produtosIniciais = {
     alfacecrespa: {
         tituloproduto: "Alface Crespa",
         imagem: "./Imagens/Alface Crespa.webp",
-        preco: "3,99 / Kg",
+        preco: "3,99 / Un",
         precoOferta: null,
         setor: "hortifruti", 
         tags: null
@@ -234,7 +234,7 @@ const produtosIniciais = {
     alho: {
         tituloproduto: "Alho",
         imagem: "./Imagens/Alho.webp",
-        preco: "3,50 / Kg",
+        preco: "3,50 / 100g",
         precoOferta: null,
         setor: "hortifruti", 
         tags: null
@@ -266,7 +266,7 @@ const produtosIniciais = {
     ovosbrancos: {
         tituloproduto: "Ovos Brancos",
         imagem: "./Imagens/Ovos Brancos.webp",
-        preco: "12,99 / Kg",
+        preco: "12,99 / Dúzia",
         precoOferta: null,
         setor: "hortifruti", 
         tags: null
@@ -276,7 +276,7 @@ const produtosIniciais = {
     arrozagulha: {
         tituloproduto: "Arroz Agulhinha Tipo 1 Camil (5Kg)",
         imagem: "./Imagens/Arroz Camil.webp",
-        preco: "24,90 / Kg",
+        preco: "24,90 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -284,7 +284,7 @@ const produtosIniciais = {
     feijaocarioca: {
         tituloproduto: "Feijão Carioca (1Kg)",
         imagem: "./Imagens/Feijão Carioca.webp",
-        preco: "9,99 / Kg",
+        preco: "9,99 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -292,7 +292,7 @@ const produtosIniciais = {
     açucarrefinado: {
         tituloproduto: "Açúcar Refinado (1Kg)",
         imagem: "./Imagens/Açucar Refinado.webp",
-        preco: "5,49 / Kg",
+        preco: "5,49 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -300,7 +300,7 @@ const produtosIniciais = {
     cafeempotradicional: {
         tituloproduto: "Café em Pó Tradicional (500g)",
         imagem: "./Imagens/Café Tradicional jpg.jpg",
-        preco: "18,90 / Kg",
+        preco: "18,90 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -308,7 +308,7 @@ const produtosIniciais = {
     leiteintegral: {
         tituloproduto: "Leite Integral (1L)",
         imagem: "./Imagens/Leite Integral.webp",
-        preco: "5,99 / Kg",
+        preco: "5,99 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -316,7 +316,7 @@ const produtosIniciais = {
     biscoitorecheado: {
         tituloproduto: "Biscoito Recheado (Pacote)",
         imagem: "./Imagens/Biscoito Recheado .webp",
-        preco: "3,99 / Kg",
+        preco: "3,99 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -324,7 +324,7 @@ const produtosIniciais = {
     macaraoespaquete: {
         tituloproduto: "Macarrão Espaguete (500g)",
         imagem: "./Imagens/Macarrão.webp",
-        preco: "4,79 / Kg",
+        preco: "4,79 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -332,7 +332,7 @@ const produtosIniciais = {
      detergenteliquido: {
         tituloproduto: "Detergente Líquido Ypê (500ml)",
         imagem: "./Imagens/Detergente.webp",
-        preco: "2,99 / Kg",
+        preco: "2,99 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -340,7 +340,7 @@ const produtosIniciais = {
     raçaoparacaes: {
         tituloproduto: "Ração para Cães Adultos (1Kg)",
         imagem: "./Imagens/Ração para cachorro.jpeg",
-        preco: "21,90 / Kg",
+        preco: "21,90 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -348,7 +348,7 @@ const produtosIniciais = {
     aguasanitaria: {
         tituloproduto: "Água Sanitária (1L)",
         imagem: "./Imagens/Candida.webp",
-        preco: "4,79 / Kg",
+        preco: "4,79 / Un",
         precoOferta: null,
         setor: "mercado", 
         tags: null
@@ -359,7 +359,8 @@ const produtosIniciais = {
 /* 2. LÓGICA DO INDEXED DB                           */
 /* ================================================= */
 
-const DB_NAME = "PadariaDB_V5";
+// AQUI ESTÁ A MÁGICA: Mudei o nome para V6 para ele forçar a atualização!
+const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 2; 
 
 function conectarBanco() {
@@ -428,7 +429,7 @@ const containerProdutos = document.getElementById("container-produtos");
 const tituloSetor = document.getElementById("titulo-setor");
 const barraBusca = document.getElementById("barra-busca");
 
-let produtosFiltradosInicialmente = [];
+let produtosFiltradosInicialmente =[];
 
 function capitalizar(str) {
     if (!str) return "";
