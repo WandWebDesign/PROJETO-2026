@@ -378,3 +378,28 @@ body {
         justify-content: flex-start;
     }
 }
+
+@media (max-width: 768px) {
+    /* Cabeçalho mais compacto */
+    .logo img {
+        height: 40px;
+    }
+
+    .marca h1 {
+        font-size: 1.8rem;
+    }
+
+    /* Ícones do menu de categorias menores */
+    .escolhas img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .escolhas p {
+        font-size: 0.8rem;
+    }
+    
+    .busca-container {
+        margin-top: 5px;
+    }
+}

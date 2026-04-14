@@ -194,8 +194,40 @@
 }
 
 /* Posicionamento dos botões em telas menores para não sair da tela */
-@media (max-width: 1100px) {
-    .botao-antes { left: 5px; }
-    .botao-depois { right: 5px; }
-    .grid-produtos { width: 95%; } /* Ocupa mais espaço no mobile */
+/* =======================================================
+   CARDS RESPONSIVOS - 2 POR LINHA NO MOBILE
+======================================================= */
+@media (max-width: 600px) {
+    .card-produtos {
+        /* Mostra 2 itens por vez com um pequeno respiro */
+        flex: 0 0 calc(50% - 10px); 
+        padding: 1rem;
+    }
+
+    .card-produtos img {
+        height: 100px; /* Imagem menor para caber no card lateral */
+        margin-bottom: 0.5rem;
+    }
+
+    .card-produtos h4 {
+        font-size: 0.95rem; /* Texto menor */
+        height: 2.4rem; /* Limita altura do título para alinhar botões */
+        overflow: hidden;
+    }
+
+    #texto-preço {
+        font-size: 1.1rem;
+    }
+
+    .botao-comprar, .btn-agendar {
+        padding: 8px 0;
+        font-size: 0.8rem; /* Botão mais delicado */
+    }
+    
+    /* Setas do carrossel menores no mobile */
+    .botao-carrossel {
+        width: 35px;
+        height: 35px;
+        font-size: 1.5rem;
+    }
 }
