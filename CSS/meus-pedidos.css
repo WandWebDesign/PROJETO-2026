@@ -90,7 +90,7 @@ body.dark-mode .info-retirada {
 
 /* Box de Regras no Topo */
 .box-regras-cancelamento {
-    background-color: var(--branco);
+    background-color: #fff9f0;
     border-left: 5px solid var(--dourado-suave);
     padding: 1.5rem;
     border-radius: 12px;
