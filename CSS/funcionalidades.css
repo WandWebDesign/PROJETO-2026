@@ -2,21 +2,28 @@
    VARIÁVEIS DE MODO ESCURO (Noturno Gourmet)
 ========================================= */
 body.dark-mode {
-    --bg: #1A110D;               /* Marrom espresso quase preto */
-    --creme-fundo: #2A1C15;      /* Fundo de seções mais claras */
-    --text: #E8E0D5;             /* Texto claro off-white */
-    --cafe-escuro: #E8E0D5;      /* Inverte o café escuro para claro */
-    --textcard: #D0C5B8;
-    --branco: #231610;           /* Onde era branco, vira um marrom bem escuro */
+    /* Tons de café mais claros e acinzentados para ser "mais leve" */
+    --bg: #2d241e;               /* Marrom suave, menos denso que o anterior */
+    --creme-fundo: #3d332d;      /* Fundo de seções com contraste reduzido */
+    --text: #f0eae4;             /* Texto levemente mais brilhante para leitura */
+    --cafe-escuro: #f0eae4;      /* Inverte o café escuro para um creme claro */
+    --textcard: #e0d6cd;
+    --branco: #382d27;           /* Onde era branco puro, vira um tom chocolate médio */
     
     background-color: var(--bg);
     color: var(--text);
 }
 
-/* Ajustes finos para o Dark Mode */
+/* AJUSTE ESPECÍFICO: Mantém o título do Banner Hero sempre branco */
+body.dark-mode .iniciar h3 {
+    color: #FFFFFF !important;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7); /* Sombra mais forte para destacar no fundo escuro */
+}
+
+/* Ajustes finos adicionais para suavizar o Dark Mode */
 body.dark-mode .header {
     background-color: var(--bg);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .menu-categorias {
@@ -24,20 +31,10 @@ body.dark-mode .menu-categorias {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-body.dark-mode .escolhas img {
-    background-color: var(--bg);
-}
-
-body.dark-mode .card-produtos {
-    background-color: var(--creme-fundo);
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
 body.dark-mode #input-busca {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.08); /* Busca um pouco mais visível */
     color: var(--text);
 }
-
 /* =========================================
    CARRINHO LATERAL (OFF-CANVAS) - PREMIUM
 ========================================= */
