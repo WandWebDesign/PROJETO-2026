@@ -2,16 +2,14 @@
 /* CONFIGURAÇÃO DO BANCO DE DADOS                    */
 /* ================================================= */
 const DB_NAME = "PadariaDB_V5";
-const DB_VERSION = 3; 
+const DB_VERSION = 3; // CORREÇÃO 1: Atualizado para a versão 3!
 const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
 
-// 1. Função para conectar ao banco (Mesma lógica do catálogo)
+// 1. Função para conectar ao banco
 function conectarBanco() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         request.onerror = (event) => reject("Erro no DB");
-        // O onupgradeneeded não é estritamente necessário aqui se o banco já foi criado pelo catalogo.js,
-        // mas é bom ter para garantir a conexão correta.
         request.onsuccess = (event) => resolve(event.target.result);
     });
 }
@@ -20,6 +18,10 @@ function conectarBanco() {
 function buscarTodosProdutos(db) {
     const promessasDeBusca = SETORES_DO_BANCO.map(setor => {
         return new Promise((resolve) => {
+            if (!db.objectStoreNames.contains(setor)) {
+                resolve([]);
+                return;
+            }
             const transaction = db.transaction([setor], "readonly");
             const store = transaction.objectStore(setor);
             const request = store.getAll();
@@ -32,7 +34,7 @@ function buscarTodosProdutos(db) {
         const todosProdutosJuntos = resultados.flat();
         return todosProdutosJuntos.map(item => {
             const { id, ...resto } = item;
-            return [id, resto]; // Retorna no formato [id, {dados}]
+            return [id, resto]; 
         });
     });
 }
@@ -43,29 +45,38 @@ function buscarTodosProdutos(db) {
 
 // 3. Função que desenha o HTML de um único produto
 function criarCardHTML(id, produto) {
-    // Capitaliza a primeira letra do setor (ex: padaria -> Padaria)
     const nomeSetor = produto.setor.charAt(0).toUpperCase() + produto.setor.slice(1);
     
-    // Configura os preços. Se tem oferta, mostra os dois.
+    // Configura os preços
     let precoPrincipal = produto.preco;
     let precoSecundario = "";
 
     if (produto.precoOferta) {
         precoPrincipal = produto.precoOferta;
-        // Se tem oferta, o preço antigo fica menor e com um estilo diferente (você pode ajustar no CSS)
         precoSecundario = `<p id="texto-info" style="text-decoration: line-through;">R$ ${produto.preco}</p>`;
     }
 
-    // Configura o botão de agendar se for retirável
+    // CORREÇÃO 2: Lógica inteligente para as imagens (Antigas vs Novas)
+    let imagemSrc = "./Imagens/Logo.png"; // Fallback caso não tenha imagem
+    if (produto.imagens && produto.imagens.length > 0) {
+        imagemSrc = produto.imagens[0]; // Pega a primeira foto do array do novo Admin
+    } else if (produto.imagem) {
+        imagemSrc = produto.imagem; // Pega a foto do sistema antigo
+        // Se a imagem veio do admin com o caminho errado ("../../Imagens..."), nós consertamos
+        if (imagemSrc.startsWith('../../')) {
+            imagemSrc = './' + imagemSrc.substring(6);
+        }
+    }
+
+    // Configura o botão de agendar
     let botaoHTML = "";
     if (produto.tags && produto.tags.includes("retiravel")) {
         botaoHTML = `<a href="pagina-agendamento.html?id=${id}" class="botao-comprar" style="text-decoration: none;">Agendar</a>`;
     }
 
-    // Retorna a estrutura HTML do article
     return `
         <article class="card-produtos">
-            <img src="${produto.imagem}" alt="${produto.tituloproduto}">
+            <img src="${imagemSrc}" alt="${produto.tituloproduto}">
             <h4>${produto.tituloproduto}</h4>
             <h5>${nomeSetor}</h5>
             <p id="texto-preço">R$ ${precoPrincipal}</p>
@@ -77,12 +88,11 @@ function criarCardHTML(id, produto) {
 
 // 4. Função para injetar os produtos no carrossel correto
 function popularCarrossel(idCarrossel, produtosFiltrados) {
-    // Procura a div interna correta baseada no ID pai
     const container = document.querySelector(`#${idCarrossel} .carrossel-conjunto`);
     
-    if (!container) return; // Se a seção não existir, ignora
+    if (!container) return; 
     
-    container.innerHTML = ""; // Limpa qualquer conteúdo antigo
+    container.innerHTML = ""; 
     
     produtosFiltrados.forEach(([id, produto]) => {
         container.innerHTML += criarCardHTML(id, produto);
@@ -97,8 +107,6 @@ async function carregarLandingPage() {
     try {
         const db = await conectarBanco();
         const todosProdutos = await buscarTodosProdutos(db);
-
-        // --- FILTRAGEM E PREENCHIMENTO ---
 
         // 1. Peça e Retire (Tag: retiravel)
         const produtosRetiraveis = todosProdutos.filter(([id, prod]) => prod.tags && prod.tags.includes("retiravel"));
@@ -129,5 +137,4 @@ async function carregarLandingPage() {
     }
 }
 
-// Inicia o processo quando a página carregar
 document.addEventListener("DOMContentLoaded", carregarLandingPage);
