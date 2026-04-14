@@ -3,14 +3,15 @@
 ======================================================= */
 
 const DB_NAME = "PadariaDB_V5";
-let setorAdminAtual = 'padaria'; // Começa mostrando a padaria
+const DB_VERSION = 3;
+let setorAdminAtual = 'padaria'; 
+let imagensTemporarias = []; // Array global para as fotos
 
-// Inicia a tela
 document.addEventListener('DOMContentLoaded', () => {
     carregarSetorAdmin(setorAdminAtual);
 });
 
-// 1. CONEXÃO COM O BANCO (Reutilizada do cliente)
+// 1. CONEXÃO COM O BANCO
 function abrirBancoAdmin() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME);
@@ -19,12 +20,11 @@ function abrirBancoAdmin() {
     });
 }
 
-// 2. LER (R do CRUD) - Carrega a grade
+// 2. LER (Carrega a grade)
 async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
     document.getElementById('titulo-setor-admin').innerText = setor;
     
-    // Atualiza botões laterais (CSS)
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
     document.getElementById(`btn-${setor}`).classList.add('ativo');
 
@@ -37,15 +37,13 @@ async function carregarSetorAdmin(setor) {
         const req = store.getAll();
 
         req.onsuccess = () => {
-            const produtos = req.result;
-            desenharGradeAdmin(produtos);
+            desenharGradeAdmin(req.result);
         };
     } catch (erro) {
         console.error(erro);
     }
 }
 
-// Localize esta função no seu admin-logic.js
 function desenharGradeAdmin(produtos) {
     const grid = document.getElementById('grid-admin-produtos');
     grid.innerHTML = '';
@@ -58,23 +56,20 @@ function desenharGradeAdmin(produtos) {
     produtos.forEach(prod => {
         const precoDisplay = prod.precoOferta ? prod.precoOferta : prod.preco;
         
-        // --- CORREÇÃO DE CAMINHO ADICIONADA AQUI ---
-        // Se a imagem começa com "./", ela foi feita para a raiz. 
-        // Adicionamos "../../" para que o HTML em Admin/HTML encontre-a.
-        let caminhoImagem = prod.imagem;
-        if (caminhoImagem.startsWith('./')) {
-            caminhoImagem = '../../' + caminhoImagem.substring(2);
+        // Pega a primeira imagem do array (se for novo) ou a imagem única (se for antigo)
+        let caminhoImagem = "";
+        if (prod.imagens && prod.imagens.length > 0) {
+            caminhoImagem = prod.imagens[0];
+        } else if (prod.imagem) {
+            caminhoImagem = prod.imagem.startsWith('./') ? '../../' + prod.imagem.substring(2) : prod.imagem;
         }
-        // -------------------------------------------
 
         const jsonProd = encodeURIComponent(JSON.stringify(prod));
 
         grid.innerHTML += `
             <div class="card-admin">
                 <button class="btn-deletar-card" onclick="apagarProduto('${prod.id}', '${prod.setor}')" title="Excluir Produto">🗑️</button>
-                
                 <img src="${caminhoImagem}" alt="${prod.tituloproduto}">
-                
                 <h5>Setor: ${prod.setor}</h5>
                 <h3>${prod.tituloproduto}</h3>
                 <p class="preco">R$ ${precoDisplay}</p>
@@ -84,7 +79,7 @@ function desenharGradeAdmin(produtos) {
     });
 }
 
-// 3. EXCLUIR (D do CRUD)
+// 3. EXCLUIR
 async function apagarProduto(idProduto, setorProduto) {
     if (!confirm("Tem certeza que deseja APAGAR este produto permanentemente?")) return;
 
@@ -97,41 +92,95 @@ async function apagarProduto(idProduto, setorProduto) {
 
         tx.oncomplete = () => {
             if(typeof mostrarToast === 'function') mostrarToast("Produto excluído!");
-            carregarSetorAdmin(setorProduto); // Recarrega a tela
+            carregarSetorAdmin(setorProduto);
         };
     } catch (erro) {
         alert("Erro ao excluir produto.");
     }
 }
 
-// 4. MODAL E SALVAMENTO (C e U do CRUD)
+// 4. MODAL E LÓGICA DE UPLOAD
+function gerenciarUploadImagens(input) {
+    const arquivos = Array.from(input.files);
+
+    if (imagensTemporarias.length + arquivos.length > 6) {
+        alert("Erro: O limite máximo é de 6 imagens por produto.");
+        return;
+    }
+
+    arquivos.forEach(arquivo => {
+        const leitor = new FileReader();
+        leitor.onload = function(e) {
+            imagensTemporarias.push(e.target.result);
+            renderizarPreviews();
+        };
+        leitor.readAsDataURL(arquivo);
+    });
+    input.value = ""; // Reseta o input para permitir selecionar a mesma foto depois se quiser
+}
+
+function renderizarPreviews() {
+    const grid = document.getElementById('grid-previsualizacao');
+    grid.innerHTML = "";
+
+    if (imagensTemporarias.length === 0) {
+        grid.innerHTML = '<p class="msg-vazia">Nenhuma foto selecionada (Mínimo 4 necessárias)</p>';
+        return;
+    }
+
+    imagensTemporarias.forEach((foto, index) => {
+        const div = document.createElement('div');
+        div.className = 'foto-preview';
+        div.innerHTML = `
+            <img src="${foto}">
+            <button type="button" class="btn-remover-foto" onclick="removerFotoTemporaria(${index})">×</button>
+        `;
+        grid.appendChild(div);
+    });
+}
+
+function removerFotoTemporaria(index) {
+    imagensTemporarias.splice(index, 1);
+    renderizarPreviews();
+}
+
 function abrirModalProduto() {
     document.getElementById('form-produto').reset();
-    document.getElementById('prod-id').disabled = false; // Permite digitar novo ID
-    document.getElementById('prod-id-original').value = ""; // Limpa referência antiga
+    document.getElementById('prod-id').disabled = false; 
+    document.getElementById('prod-id-original').value = ""; 
     document.getElementById('modal-titulo').innerText = "Adicionar Novo Produto";
-    
-    // Trava o setor para o que estamos a ver agora
     document.getElementById('prod-setor').value = setorAdminAtual; 
     
+    // Zera as imagens
+    imagensTemporarias = [];
+    renderizarPreviews();
+
     document.getElementById('modal-produto').style.display = 'flex';
 }
 
 function abrirModalEditar(jsonProdutoCodificado) {
     const prod = JSON.parse(decodeURIComponent(jsonProdutoCodificado));
     
-    // Preenche o formulário com os dados do banco
     document.getElementById('modal-titulo').innerText = "Editar Produto";
     document.getElementById('prod-id-original').value = prod.id; 
     document.getElementById('prod-id').value = prod.id;
-    document.getElementById('prod-id').disabled = true; // Não deixamos mudar a chave (ID)
+    document.getElementById('prod-id').disabled = true; 
     
     document.getElementById('prod-setor').value = prod.setor;
     document.getElementById('prod-titulo').value = prod.tituloproduto;
     document.getElementById('prod-preco').value = prod.preco;
     document.getElementById('prod-oferta').value = prod.precoOferta || "";
-    document.getElementById('prod-imagem').value = prod.imagem;
     
+    // CARREGA AS IMAGENS PARA A EDIÇÃO (Compatibilidade com produtos antigos e novos)
+    imagensTemporarias = [];
+    if (prod.imagens && Array.isArray(prod.imagens)) {
+        imagensTemporarias = [...prod.imagens];
+    } else if (prod.imagem) {
+        let caminhoAntigo = prod.imagem.startsWith('./') ? '../../' + prod.imagem.substring(2) : prod.imagem;
+        imagensTemporarias.push(caminhoAntigo);
+    }
+    renderizarPreviews();
+
     document.getElementById('prod-tag-retiravel').checked = prod.tags && prod.tags.includes('retiravel');
     document.getElementById('prod-tag-oferta').checked = prod.tags && prod.tags.includes('oferta');
 
@@ -142,23 +191,24 @@ function fecharModalProduto() {
     document.getElementById('modal-produto').style.display = 'none';
 }
 
-// 5. CRIAR e ATUALIZAR
+// 5. CRIAR e ATUALIZAR (Unificado)
 async function salvarProduto() {
-    // 5.1 Pegar dados do form
     const id = document.getElementById('prod-id').value.trim().toLowerCase().replace(/\s+/g, '');
-    const idOriginal = document.getElementById('prod-id-original').value;
     const setor = document.getElementById('prod-setor').value;
     const titulo = document.getElementById('prod-titulo').value;
     const preco = document.getElementById('prod-preco').value;
     const oferta = document.getElementById('prod-oferta').value;
-    const imagem = document.getElementById('prod-imagem').value;
     
-    if(!id || !titulo || !preco || !imagem) {
-        alert("Preencha todos os campos obrigatórios!");
+    if(!id || !titulo || !preco) {
+        alert("Preencha todos os campos de texto obrigatórios!");
         return;
     }
 
-    // Processa as tags
+    if (imagensTemporarias.length < 4) {
+        alert("Atenção: Você precisa adicionar pelo menos 4 imagens para o produto.");
+        return;
+    }
+
     let tagsAtivas = [];
     if(document.getElementById('prod-tag-retiravel').checked) tagsAtivas.push('retiravel');
     if(document.getElementById('prod-tag-oferta').checked) tagsAtivas.push('oferta');
@@ -170,7 +220,8 @@ async function salvarProduto() {
         tituloproduto: titulo,
         preco: preco,
         precoOferta: oferta || null,
-        imagem: imagem,
+        imagens: imagensTemporarias, // Salva todas as fotos no array
+        imagem: imagensTemporarias[0], // Compatibilidade: a loja principal ainda lê '.imagem'
         tags: tagsAtivas
     };
 
@@ -179,21 +230,19 @@ async function salvarProduto() {
         const tx = db.transaction(setor, 'readwrite');
         const store = tx.objectStore(setor);
 
-        // Se for um novo ID (Adicionando), garantimos que ele existe.
-        // Se for edição, o put() substitui o que lá está usando o mesmo ID.
         store.put(objetoProduto);
 
         tx.oncomplete = () => {
             fecharModalProduto();
             if(typeof mostrarToast === 'function') mostrarToast("Produto salvo com sucesso!");
-            carregarSetorAdmin(setor); // Recarrega a tela do setor atual
+            carregarSetorAdmin(setor); 
         };
     } catch (erro) {
         alert("Erro ao salvar no banco de dados.");
     }
 }
 
-// Simples busca visual na tabela
+// 6. BUSCA VISUAL
 function filtrarProdutosAdmin() {
     const termo = document.getElementById('busca-admin').value.toLowerCase();
     const cards = document.querySelectorAll('.card-admin');

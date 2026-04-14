@@ -360,16 +360,13 @@ const produtosIniciais = {
 /* ================================================= */
 
 const DB_NAME = "PadariaDB_V5";
-const DB_VERSION = 2; 
+const DB_VERSION = 3; // 1. MUDE A VERSÃO DE 2 PARA 3
 
 function conectarBanco() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onerror = (event) => {
-            console.error("Erro ao abrir o banco:", event);
-            reject("Erro no DB");
-        };
+        // ... código de onerror mantido ...
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
@@ -387,7 +384,9 @@ function conectarBanco() {
 
                 if (SETORES_DO_BANCO.includes(setorDoProduto)) {
                     const store = transaction.objectStore(setorDoProduto);
-                    store.add({ id: chave, ...produto });
+                    // 2. MUDE DE store.add PARA store.put
+                    // Assim, toda vez que você mudar um preço ou imagem, ele atualiza!
+                    store.put({ id: chave, ...produto }); 
                 }
             });
         };

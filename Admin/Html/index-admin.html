@@ -38,7 +38,6 @@
                     <span class="icone">📈</span><span class="texto-circulo">Vendas</span>
                 </button>
             </nav>
-            <a href="../../padaria-landinpage.html" class="btn-voltar-loja" title="Sair do Painel">↩</a>
         </aside>
 
         <main class="main-admin">
@@ -46,6 +45,13 @@
             <header class="topbar-admin">
                 <div class="titulo-setor-atual">
                     <h1 id="titulo-setor-admin">Padaria</h1>
+                </div>
+
+                <div>
+                    <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
+                    <span class="icone">↩️</span>
+                    <span class="texto-circulo">Voltar para Loja</span>
+                     </a>
                 </div>
                 
                 <div class="busca-admin-container">
@@ -104,8 +110,17 @@
                     </div>
 
                     <div class="campo">
-                        <label>Caminho da Imagem:</label>
-                        <input type="text" id="prod-imagem" placeholder="Ex: ../Imagens/PãoFrances.webp" required>
+                        <label>Fotos do Produto (Mínimo 4, Máximo 6):</label>
+                        <div class="area-upload">
+                            <input type="file" id="prod-imagens-input" accept="image/*" multiple hidden onchange="gerenciarUploadImagens(this)">
+                            <button type="button" class="btn-escolher-fotos" onclick="document.getElementById('prod-imagens-input').click()">
+                                <span>📸</span> Selecionar Fotos da Máquina
+                            </button>
+                            
+                            <div id="grid-previsualizacao" class="grid-previsualizacao">
+                                <p class="msg-vazia">Nenhuma foto selecionada (Mínimo 4 necessárias)</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="campo-checkbox">
