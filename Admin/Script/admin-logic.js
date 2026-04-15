@@ -281,3 +281,44 @@ function filtrarProdutosAdmin() {
         else card.style.display = 'none';
     });
 }
+
+// ENTRADA DE DADOS - PEDIDOS
+document.addEventListener('DOMContentLoaded', () => {
+    carregarPedidos();
+});
+
+function carregarPedidos() {
+    const gridAdmin = document.querySelector('.grid-admin');
+    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    // Limpa a grid antes de carregar (opcional)
+    gridAdmin.innerHTML = '';
+
+    if (pedidos.length === 0) {
+        gridAdmin.innerHTML = '<p>Nenhum pedido recebido ainda.</p>';
+        return;
+    }
+
+    // Cria o HTML para cada pedido salvo
+    pedidos.forEach(pedido => {
+        const card = `
+            <div class="card-admin">
+                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})">✖</button>
+                <h5>${pedido.cliente} • ${pedido.data}</h5>
+                <h3>Pedido #${pedido.id}</h3>
+                <div class="preco">R$ ${pedido.valor.toFixed(2)}</div>
+                <p class="status-badge">${pedido.status}</p>
+                <button class="btn-editar-card">Ver Detalhes</button>
+            </div>
+        `;
+        gridAdmin.innerHTML += card;
+    });
+}
+
+// Função para deletar um pedido
+function removerPedido(id) {
+    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    pedidos = pedidos.filter(p => p.id !== id);
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+    carregarPedidos(); // Atualiza a tela
+}

@@ -214,3 +214,29 @@ btnAgendar.addEventListener("click", () => {
 
 // Inicializa tudo quando a página carregar
 document.addEventListener("DOMContentLoaded", carregarTela);
+
+// ENTRADA DE DADOS - PEDIDOS
+// Exemplo de função para finalizar o pedido
+function finalizarPedido(dadosCliente, itensSelecionados) {
+    // 1. Criar o objeto do pedido
+    const novoPedido = {
+        id: Math.floor(1000 + Math.random() * 9000), // Gera um ID aleatório
+        cliente: dadosCliente.nome,
+        data: new Date().toLocaleDateString('pt-BR'),
+        valor: calcularTotal(itensSelecionados),
+        status: "Pendente",
+        itens: itensSelecionados
+    };
+
+    // 2. Buscar pedidos existentes ou criar lista vazia
+    const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    // 3. Adicionar o novo pedido à lista
+    pedidosAtuais.push(novoPedido);
+
+    // 4. Salvar de volta no localStorage
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
+
+    // 5. Redirecionar para o admin (como você solicitou)
+    window.location.href = 'index-admin.html';
+}
