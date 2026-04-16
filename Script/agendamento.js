@@ -162,7 +162,9 @@ btnAgendar.addEventListener("click", () => {
     }
 
     if (etapa === "confirmar") {
-        if (!localStorage.getItem("usuarioLogado")) {
+        const nomeClienteLogado = localStorage.getItem("usuarioLogado");
+        
+        if (!nomeClienteLogado) {
             if(typeof mostrarToast === 'function') mostrarToast("Faça login para agendar!");
             else alert("Faça login para agendar!");
             return;
@@ -174,41 +176,47 @@ btnAgendar.addEventListener("click", () => {
             return;
         }
 
-        // Formata dd/mm/aaaa
+        // Formata a data (dd/mm/aaaa)
         const [ano, mes, dia] = inputData.value.split("-");
         const dataFormatada = `${dia}/${mes}/${ano}`;
 
-        // Define a foto que vai para o carrinho
-        let imagemCarrinho = "./Imagens/Logo.png";
-        if (produtoAtual.imagens && produtoAtual.imagens.length > 0) imagemCarrinho = produtoAtual.imagens[0];
-        else if (produtoAtual.imagem) imagemCarrinho = produtoAtual.imagem;
-
-        // Salva no carrinho (localStorage)
-        const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
         const precoString = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
-        
-        carrinho.push({
-            id:           idProduto,
-            nome:         produtoAtual.tituloproduto,
-            preco:        extrairNumeroPreco(precoString),
-            quantidade:   quantidade,
+        const precoUnitario = extrairNumeroPreco(precoString);
+        const valorTotalProduto = precoUnitario * quantidade;
+
+        // 1. CRIAR O OBJETO DO PEDIDO
+        const novoPedido = {
+            id: Math.floor(1000 + Math.random() * 9000), // Gera um ID ex: #4052
+            cliente: nomeClienteLogado,
+            data: new Date().toLocaleDateString('pt-BR'),
             dataRetirada: dataFormatada,
-            img:          imagemCarrinho
-        });
-        
-        localStorage.setItem("carrinho", JSON.stringify(carrinho));
+            valor: valorTotalProduto,
+            status: "Pendente",
+            itens: [{
+                nome: produtoAtual.tituloproduto,
+                quantidade: quantidade,
+                preco: precoUnitario
+            }]
+        };
 
-        if(typeof mostrarToast === 'function') mostrarToast(`✅ ${produtoAtual.tituloproduto} adicionado ao carrinho!`);
-        
-        // Atualiza e abre o carrinho lateral
-        if(typeof atualizarInterfaceCarrinho === 'function') atualizarInterfaceCarrinho();
-        if(typeof abrirCarrinho === 'function') abrirCarrinho();
+        // 2. SALVAR NO BANCO DE PEDIDOS (localStorage)
+        const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+        pedidosAtuais.push(novoPedido);
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
 
-        // Reseta o botão e o input
+        if(typeof mostrarToast === 'function') mostrarToast(`✅ Pedido #${novoPedido.id} enviado com sucesso!`);
+
+        // Reseta o formulário
         containerData.style.display = "none";
         inputData.value = "";
         btnAgendar.innerText = "Escolher Data";
         etapa = "escolher-data";
+
+        // 3. REDIRECIONAR PARA O ADMIN COM PARÂMETRO NA URL
+        setTimeout(() => {
+            // O parâmetro '?setor=pedidos' avisa o admin-logic.js para abrir a aba correta
+            window.location.href = 'index-admin.html?setor=pedidos';
+        }, 1200);
     }
 });
 

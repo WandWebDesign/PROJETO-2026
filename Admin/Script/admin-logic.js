@@ -8,7 +8,15 @@ let setorAdminAtual = 'padaria';
 let imagensTemporarias = []; // Array global para as fotos
 
 document.addEventListener('DOMContentLoaded', () => {
-    carregarSetorAdmin(setorAdminAtual);
+    // Verifica se veio redirecionado da página de agendamento
+    const urlParams = new URLSearchParams(window.location.search);
+    const setorDesejado = urlParams.get("setor");
+    
+    if (setorDesejado) {
+        carregarSetorAdmin(setorDesejado);
+    } else {
+        carregarSetorAdmin(setorAdminAtual);
+    }
 });
 
 // 1. CONEXÃO COM O BANCO
@@ -23,11 +31,24 @@ function abrirBancoAdmin() {
 // 2. LER (Carrega a grade)
 async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
-    document.getElementById('titulo-setor-admin').innerText = setor;
+    document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     
+    // Atualiza o botão ativo no menu lateral
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
-    document.getElementById(`btn-${setor}`).classList.add('ativo');
+    const btnAtivo = document.getElementById(`btn-${setor}`);
+    if(btnAtivo) btnAtivo.classList.add('ativo');
 
+    // REGRA NOVA: Se o setor for pedidos, carrega a tela de pedidos e esconde o botão de adicionar produto
+    const acoesTopo = document.querySelector('.acoes-topo');
+    if (setor === 'pedidos') {
+        if(acoesTopo) acoesTopo.style.display = 'none'; 
+        carregarPedidos();
+        return; 
+    } else {
+        if(acoesTopo) acoesTopo.style.display = 'block';
+    }
+
+    // Lógica normal de carregar produtos do IndexedDB
     try {
         const db = await abrirBancoAdmin();
         if (!db.objectStoreNames.contains(setor)) return;
@@ -288,27 +309,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function carregarPedidos() {
-    const gridAdmin = document.querySelector('.grid-admin');
+    // Alvo correto: a mesma grade usada para os produtos
+    const gridAdmin = document.getElementById('grid-admin-produtos'); 
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
 
-    // Limpa a grid antes de carregar (opcional)
     gridAdmin.innerHTML = '';
 
     if (pedidos.length === 0) {
-        gridAdmin.innerHTML = '<p>Nenhum pedido recebido ainda.</p>';
+        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; font-weight: bold; font-size: 1.2rem; color: var(--cafe-claro); padding: 40px;">Nenhum pedido recebido ainda. 🥖</p>';
         return;
     }
 
-    // Cria o HTML para cada pedido salvo
     pedidos.forEach(pedido => {
+        // Define a cor baseada no status
+        let corStatus = "var(--dourado-suave)";
+        if(pedido.status === "Concluído") corStatus = "var(--cafe-escuro)";
+        else if(pedido.status === "Pendente") corStatus = "var(--vermelho-alerta)";
+
         const card = `
-            <div class="card-admin">
-                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})">✖</button>
-                <h5>${pedido.cliente} • ${pedido.data}</h5>
+            <div class="card-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
+                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})" title="Cancelar Pedido">✖</button>
+                <h5>${pedido.cliente} • Retirada: ${pedido.dataRetirada || pedido.data}</h5>
                 <h3>Pedido #${pedido.id}</h3>
-                <div class="preco">R$ ${pedido.valor.toFixed(2)}</div>
-                <p class="status-badge">${pedido.status}</p>
-                <button class="btn-editar-card">Ver Detalhes</button>
+                <div class="preco">R$ ${pedido.valor.toFixed(2).replace('.', ',')}</div>
+                <p style="color: ${corStatus}; font-weight: 800; margin-bottom: 15px;">${pedido.status}</p>
+                
+                <button class="btn-editar-card" onclick="alert('Itens do pedido:\\n${pedido.itens.map(i => i.quantidade + 'x ' + i.nome).join('\\n')}')">Ver Detalhes</button>
             </div>
         `;
         gridAdmin.innerHTML += card;
