@@ -557,5 +557,4 @@ async function iniciarApp() {
         console.error("Erro fatal na aplicação:", erro);
     }
 }
-
 iniciarApp();
