@@ -138,5 +138,4 @@ async function carregarLandingPage() {
         console.error("Erro ao carregar produtos na Landing Page:", erro);
     }
 }
-
 document.addEventListener("DOMContentLoaded", carregarLandingPage);
