@@ -45,11 +45,11 @@
                     <img id="produtoimagem" alt="Imagem do Produto">
                 </div>
                 <div class="lista-imagens" id="container-miniaturas">
-                    </div>
+                </div>
             </div>
 
             <div class="coluna-da-direita">
-                <h1 id="tituloproduto" class="titulo-produto">Carregando...</h1>
+                <h1 id="tituloproduto" class="titulo-produto">Carregando Produto...</h1>
                 <p class="label-descrição">Descrição do Produto:</p>
                 <div class="Descrição">
                     <p id="descricao">Carregando detalhes...</p>
@@ -73,14 +73,18 @@
                     </div>
                 </div>
 
-                <div class="container-data" id="data-picker-container" style="display: none;">
-                    <label for="data-retirada">Agendar:</label>
-                    <input type="date" id="data-retirada" required>
+                <!-- O CAMPO AGORA ESTÁ COMO DISPLAY BLOCK PARA FORÇAR A APARECER -->
+                <div class="container-data" id="data-picker-container" style="display: block; margin-top: 20px;">
+                    <label style="font-weight: 800; color: #4A3B32;">Agendar Retirada (Data e Horário):</label>
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                        <input type="date" id="data-retirada" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Nunito', sans-serif;">
+                        <input type="time" id="hora-retirada" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Nunito', sans-serif;">
+                    </div>
                 </div>
 
                 <div class="btn-baixo">
                     <a href="pagina-catalogo.html?filtro=retiravel" class="botao-voltar">← Voltar</a>
-                    <button class="botao-agendar" id="btn-agendar-final">Escolher Data</button>
+                    <button class="botao-agendar" id="btn-agendar-final" style="margin-top: 20px;">Confirmar Agendamento</button>
                 </div>
             </div>
         </section>
@@ -100,7 +104,9 @@
     </aside>
 
     <div id="toast-container"></div>
+    
     <script src="Script/funcionalidades.js"></script>
-    <script src="Script/agendamento.js"></script>
+    <!-- A mágica para o navegador parar de bugar: adicionei "?v=novo" -->
+    <script src="Script/agendamento.js?v=novo"></script>
 </body>
 </html>
