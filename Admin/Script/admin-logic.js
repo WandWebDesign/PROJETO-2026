@@ -38,11 +38,23 @@ async function carregarSetorAdmin(setor) {
     if(btnAtivo) btnAtivo.classList.add('ativo');
 
     // Se clicar em pedidos, usamos a lógica do localStorage
-    if (setor === 'pedidos') {
-        document.querySelector('.acoes-topo').style.display = 'none'; // Esconde botão de "Novo Produto"
-        mostrarPedidosNoAdmin();
+    // Dentro de carregarSetorAdmin(setor)...
+    
+    // Esconde botões que não devem aparecer nas telas de gestão
+    if (setor === 'pedidos' || setor === 'vendas') {
+        document.querySelector('.acoes-topo').style.display = 'none'; 
+        document.querySelector('.busca-admin-container').style.display = 'none'; // Esconde barra de pesquisa em vendas
+        
+        if(setor === 'pedidos') {
+            document.querySelector('.busca-admin-container').style.display = 'block'; // Volta pesquisa pros pedidos
+            mostrarPedidosNoAdmin();
+        } else {
+            mostrarVendasNoAdmin(); // Chama nossa nova tela dinâmica!
+        }
     } else {
         document.querySelector('.acoes-topo').style.display = 'block';
+        document.querySelector('.busca-admin-container').style.display = 'block';
+        // Código do IndexedDB normal...
         // Lógica normal que você já tem para carregar produtos do banco...
         const db = await abrirBancoAdmin();
         const tx = db.transaction(setor, 'readonly');
@@ -471,4 +483,94 @@ function removerPedido(id) {
         localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
         mostrarPedidosNoAdmin();
     }
+}
+
+// =======================================================
+// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
+// =======================================================
+function mostrarVendasNoAdmin() {
+    const gridAdmin = document.getElementById('grid-admin-produtos');
+    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    // Variáveis de cálculo
+    let faturamentoTotal = 0;
+    let totalPedidosConcluidos = 0;
+    let contagemProdutos = {};
+
+    // 1. O motor de cálculo: Vasculha todos os pedidos reais do banco local
+    pedidos.forEach(pedido => {
+        // Conta apenas pedidos Finalizados ou Em produção para métricas financeiras
+        if (pedido.status !== "Pendente") {
+            faturamentoTotal += pedido.valorTotal;
+            totalPedidosConcluidos++;
+
+            // Conta os produtos mais vendidos
+            pedido.itens.forEach(item => {
+                if (!contagemProdutos[item.nome]) {
+                    contagemProdutos[item.nome] = { qtd: 0, tipo: formatarQuantidadeProduto(item.nome, 1).replace(/[0-9]/g, '').trim() };
+                }
+                contagemProdutos[item.nome].qtd += item.quantidade;
+            });
+        }
+    });
+
+    // 2. Calcula Ticket Médio
+    let ticketMedio = totalPedidosConcluidos > 0 ? (faturamentoTotal / totalPedidosConcluidos) : 0;
+
+    // 3. Ordena o ranking dos Top 5 Produtos mais vendidos
+    const produtosRanking = Object.entries(contagemProdutos)
+        .sort((a, b) => b[1].qtd - a[1].qtd)
+        .slice(0, 5); // Pega só os 5 primeiros
+
+    let htmlRanking = '';
+    produtosRanking.forEach(prod => {
+        const nomeProd = prod[0];
+        const dadosProd = prod[1];
+        // Usa nossa função antiga para formatar kg, g ou un.
+        const qtdVisual = formatarQuantidadeProduto(nomeProd, dadosProd.qtd);
+        
+        htmlRanking += `
+            <tr>
+                <td class="item-nome">${nomeProd}</td>
+                <td class="item-qtd">${qtdVisual}</td>
+            </tr>
+        `;
+    });
+
+    if(htmlRanking === '') {
+        htmlRanking = '<tr><td colspan="2" style="text-align:center; color:var(--cafe-claro); padding: 20px;">Nenhuma venda registrada ainda.</td></tr>';
+    }
+
+    // 4. Monta a Tela (Unindo as métricas e o Top 5 numa view só)
+    gridAdmin.innerHTML = `
+        <div style="width: 100%; padding: 0 40px; margin-bottom: 20px;">
+            <p style="color: var(--cafe-claro);">Os dados abaixo consideram apenas pedidos <strong>Finalizados</strong> ou <strong>Em Produção</strong>.</p>
+        </div>
+
+        <section class="dashboard-vendas">
+            <div class="metric-card">
+                <h4>Faturamento Confirmado</h4>
+                <div class="valor">R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}</div>
+            </div>
+            
+            <div class="metric-card" style="border-left-color: var(--cafe-escuro);">
+                <h4>Pedidos Recebidos</h4>
+                <div class="valor">${totalPedidosConcluidos}</div>
+            </div>
+            
+            <div class="metric-card" style="border-left-color: #5cb85c;">
+                <h4>Ticket Médio</h4>
+                <div class="valor">R$ ${ticketMedio.toFixed(2).replace('.', ',')}</div>
+            </div>
+        </section>
+
+        <section style="padding: 0 40px; width: 100%; max-width: 600px;">
+            <div class="card-admin">
+                <h3 style="margin-bottom: 10px; border-bottom: 2px solid var(--creme-fundo); padding-bottom: 10px;">🏆 Top 5 Produtos Mais Vendidos</h3>
+                <table class="ranking-tabela">
+                    ${htmlRanking}
+                </table>
+            </div>
+        </section>
+    `;
 }
