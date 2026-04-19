@@ -33,35 +33,22 @@ async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
     document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     
-    // Atualiza o botão ativo no menu lateral
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
     const btnAtivo = document.getElementById(`btn-${setor}`);
     if(btnAtivo) btnAtivo.classList.add('ativo');
 
-    // REGRA NOVA: Se o setor for pedidos, carrega a tela de pedidos e esconde o botão de adicionar produto
-    const acoesTopo = document.querySelector('.acoes-topo');
+    // Se clicar em pedidos, usamos a lógica do localStorage
     if (setor === 'pedidos') {
-        if(acoesTopo) acoesTopo.style.display = 'none'; 
-        carregarPedidos();
-        return; 
+        document.querySelector('.acoes-topo').style.display = 'none'; // Esconde botão de "Novo Produto"
+        mostrarPedidosNoAdmin();
     } else {
-        if(acoesTopo) acoesTopo.style.display = 'block';
-    }
-
-    // Lógica normal de carregar produtos do IndexedDB
-    try {
+        document.querySelector('.acoes-topo').style.display = 'block';
+        // Lógica normal que você já tem para carregar produtos do banco...
         const db = await abrirBancoAdmin();
-        if (!db.objectStoreNames.contains(setor)) return;
-
         const tx = db.transaction(setor, 'readonly');
         const store = tx.objectStore(setor);
         const req = store.getAll();
-
-        req.onsuccess = () => {
-            desenharGradeAdmin(req.result);
-        };
-    } catch (erro) {
-        console.error(erro);
+        req.onsuccess = () => { desenharGradeAdmin(req.result); };
     }
 }
 
@@ -347,4 +334,40 @@ function removerPedido(id) {
     pedidos = pedidos.filter(p => p.id !== id);
     localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
     carregarPedidos(); // Atualiza a tela
+}
+
+function mostrarPedidosNoAdmin() {
+    const gridAdmin = document.getElementById('grid-admin-produtos');
+    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    gridAdmin.innerHTML = '';
+
+    if (pedidos.length === 0) {
+        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px;">Nenhum pedido novo por enquanto. ☕</p>';
+        return;
+    }
+
+    pedidos.forEach(pedido => {
+        const card = `
+            <div class="card-admin">
+                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})">✖</button>
+                <h5>Cliente: ${pedido.cliente}</h5>
+                <p>Retirada: <strong>${pedido.dataRetirada}</strong></p>
+                <h3>${pedido.quantidade}x ${pedido.produto}</h3>
+                <div class="preco">Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}</div>
+                <p style="color: #D4AF37; font-weight: bold; margin-top: 10px;">Status: ${pedido.status}</p>
+            </div>
+        `;
+        gridAdmin.innerHTML += card;
+    });
+}
+
+// Função para você excluir pedidos da lista
+function removerPedido(id) {
+    if(confirm("Deseja remover este pedido da lista?")) {
+        let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+        pedidos = pedidos.filter(p => p.id !== id);
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+        mostrarPedidosNoAdmin();
+    }
 }

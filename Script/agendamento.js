@@ -162,61 +162,43 @@ btnAgendar.addEventListener("click", () => {
     }
 
     if (etapa === "confirmar") {
-        const nomeClienteLogado = localStorage.getItem("usuarioLogado");
-        
+    const nomeClienteLogado = localStorage.getItem("usuarioLogado");
+    
         if (!nomeClienteLogado) {
-            if(typeof mostrarToast === 'function') mostrarToast("Faça login para agendar!");
-            else alert("Faça login para agendar!");
+            alert("Por favor, faça login para realizar o pedido!");
             return;
         }
 
         if (!inputData.value) {
-            if(typeof mostrarToast === 'function') mostrarToast("Escolha uma data de retirada!");
-            else alert("Escolha uma data de retirada!");
+            alert("Escolha uma data para retirada!");
             return;
         }
 
-        // Formata a data (dd/mm/aaaa)
-        const [ano, mes, dia] = inputData.value.split("-");
-        const dataFormatada = `${dia}/${mes}/${ano}`;
-
-        const precoString = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
-        const precoUnitario = extrairNumeroPreco(precoString);
-        const valorTotalProduto = precoUnitario * quantidade;
-
-        // 1. CRIAR O OBJETO DO PEDIDO
+        // Criamos o objeto do pedido
         const novoPedido = {
-            id: Math.floor(1000 + Math.random() * 9000), // Gera um ID ex: #4052
+            id: Math.floor(1000 + Math.random() * 9000),
             cliente: nomeClienteLogado,
-            data: new Date().toLocaleDateString('pt-BR'),
-            dataRetirada: dataFormatada,
-            valor: valorTotalProduto,
-            status: "Pendente",
-            itens: [{
-                nome: produtoAtual.tituloproduto,
-                quantidade: quantidade,
-                preco: precoUnitario
-            }]
+            dataPedido: new Date().toLocaleDateString('pt-BR'),
+            dataRetirada: inputData.value,
+            produto: produtoAtual.tituloproduto,
+            quantidade: quantidade,
+            valorTotal: extrairNumeroPreco(produtoAtual.precoOferta || produtoAtual.preco) * quantidade,
+            status: "Pendente"
         };
 
-        // 2. SALVAR NO BANCO DE PEDIDOS (localStorage)
+        // Salvamos no localStorage (a "ponte" para o admin)
         const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
         pedidosAtuais.push(novoPedido);
         localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
 
-        if(typeof mostrarToast === 'function') mostrarToast(`✅ Pedido #${novoPedido.id} enviado com sucesso!`);
+        // Feedback para o cliente
+        alert(`Pedido #${novoPedido.id} realizado com sucesso! Aguardamos você na data escolhida.`);
 
-        // Reseta o formulário
+        // Resetar a interface sem sair da página
         containerData.style.display = "none";
         inputData.value = "";
         btnAgendar.innerText = "Escolher Data";
         etapa = "escolher-data";
-
-        // 3. REDIRECIONAR PARA O ADMIN COM PARÂMETRO NA URL
-        setTimeout(() => {
-            // O parâmetro '?setor=pedidos' avisa o admin-logic.js para abrir a aba correta
-            window.location.href = 'index-admin.html?setor=pedidos';
-        }, 1200);
     }
 });
 
