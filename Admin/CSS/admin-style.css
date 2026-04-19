@@ -93,18 +93,48 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 .main-admin { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
 
 /* TOPO */
+/* TOPO (Header) */
 .topbar-admin {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 30px 40px; background-color: var(--fundo-admin); position: sticky; top: 0; z-index: 5;
+    display: flex; 
+    justify-content: space-between; /* Mantém o título de um lado e o bloco de controles do outro */
+    align-items: center;
+    padding: 20px 40px; 
+    background-color: var(--fundo-admin); 
+    position: sticky; 
+    top: 0; 
+    z-index: 5;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.titulo-setor-atual h1 { font-size: 2rem; font-weight: 900; color: var(--cafe-escuro); text-transform: capitalize; }
+/* NOVO: A caixa que segura e alinha tudo na direita */
+.topbar-acoes-direita {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Mantém uma distância perfeita e fixa entre os itens */
+}
+
+/* Mantém o botão Adicionar e Sair nos tamanhos originais */
+.titulo-setor-atual h1 { font-size: 2rem; font-weight: 900; color: var(--cafe-escuro); text-transform: capitalize; margin: 0; }
+
+/* Ajuste na barra de busca para que ela tenha um tamanho fixo e não esprema os botões */
+.busca-admin-container {
+    width: 300px; /* Largura fixa */
+}
 
 .busca-admin-container input {
-    width: 350px; padding: 12px 20px; border-radius: 30px; border: 1px solid rgba(0,0,0,0.1);
-    font-size: 1rem; outline: none; transition: 0.3s;
+    width: 100%; 
+    padding: 12px 20px; 
+    border-radius: 30px; 
+    border: 1px solid rgba(0,0,0,0.1);
+    font-size: 0.95rem; 
+    outline: none; 
+    transition: 0.3s;
 }
-.busca-admin-container input:focus { border-color: var(--dourado-suave); box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+
+.busca-admin-container input:focus { 
+    border-color: var(--dourado-suave); 
+    box-shadow: 0 0 10px rgba(212,175,55,0.2); 
+}
 
 .btn-adicionar-produto {
     background-color: var(--cafe-escuro); color: var(--branco); padding: 12px 25px;

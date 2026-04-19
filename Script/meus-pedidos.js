@@ -103,9 +103,8 @@ function renderizarHistorico() {
 
         div.innerHTML = `
             <div class="pedido-info">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="margin-bottom: 15px;">
                     <span class="data-compra">Realizado em ${pedido.dataPedido}</span>
-                    <span style="background-color: ${corTag}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase;">${statusAtual}</span>
                 </div>
                 
                 <h2>Pedido #${pedido.id}</h2>
@@ -115,11 +114,19 @@ function renderizarHistorico() {
                 <p style="font-size:0.8rem; color:#A89F98; margin-top: 5px;">Pagamento na retirada: ${pedido.pagamento || 'Não informado'}</p>
             </div>
             
-            <div class="acoes-historico">
-                <div class="codigo-tag">${pedido.id}</div>
+            <div class="acoes-historico" style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 180px;">
+                
+                <span style="background-color: ${corTag}; color: white; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; width: 100%; text-align: center; box-sizing: border-box;">
+                    ${statusAtual}
+                </span>
+                
+                <div class="codigo-tag" style="width: 100%; box-sizing: border-box; text-align: center; margin: 0;">
+                    ${pedido.id}
+                </div>
+                
                 ${cancelamentoPermitido 
-                    ? `<button class="btn-cancelar-pedido" onclick="cancelarPedido(${realIndex})">Cancelar Pedido</button>`
-                    : `<span class="prazo-expirado">${textoBloqueio}</span>`
+                    ? `<button class="btn-cancelar-pedido" onclick="cancelarPedido(${realIndex})" style="margin-top: 0;">Cancelar Pedido</button>`
+                    : `<span class="prazo-expirado" style="margin-top: 0;">${textoBloqueio}</span>`
                 }
             </div>
         `;
