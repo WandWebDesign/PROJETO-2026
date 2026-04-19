@@ -279,15 +279,42 @@ async function salvarProduto() {
     }
 }
 
-// 6. BUSCA VISUAL
+// 6. BUSCA VISUAL ATUALIZADA (Inteligente para Produtos e Pedidos)
 function filtrarProdutosAdmin() {
-    const termo = document.getElementById('busca-admin').value.toLowerCase();
-    const cards = document.querySelectorAll('.card-admin');
-    cards.forEach(card => {
-        const titulo = card.querySelector('h3').innerText.toLowerCase();
-        if(titulo.includes(termo)) card.style.display = 'flex';
-        else card.style.display = 'none';
-    });
+    // Pega o que o usuário digitou, transforma em minúsculas e tira os espaços em branco extras
+    const termo = document.getElementById('busca-admin').value.toLowerCase().trim();
+
+    // Cenário A: O Admin está na aba de Pedidos
+    if (setorAdminAtual === 'pedidos') {
+        const cardsPedidos = document.querySelectorAll('.card-pedido-admin');
+        
+        cardsPedidos.forEach(card => {
+            // Captura o código do pedido (ex: "#123456") e o nome do cliente
+            const codigo = card.querySelector('.pedido-header h3').innerText.toLowerCase();
+            const cliente = card.querySelector('.pedido-cliente h5').innerText.toLowerCase();
+            
+            // Verifica se o termo digitado bate com o código OU com o nome do cliente
+            if(codigo.includes(termo) || cliente.includes(termo)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    } 
+    // Cenário B: O Admin está nas abas de Produtos (Padaria, Açougue...)
+    else {
+        const cardsProdutos = document.querySelectorAll('.card-admin');
+        
+        cardsProdutos.forEach(card => {
+            const titulo = card.querySelector('h3').innerText.toLowerCase();
+            
+            if(titulo.includes(termo)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
 }
 
 // =======================================================
