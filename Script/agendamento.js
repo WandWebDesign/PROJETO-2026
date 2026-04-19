@@ -153,7 +153,9 @@ if(inputData) inputData.min = amanha.toISOString().split("T")[0];
 
 let etapa = "escolher-data";
 
+// 7. LÓGICA DO BOTÃO DE AGENDAR (CARRINHO)
 btnAgendar.addEventListener("click", () => {
+    // Passo 1: Mostrar o campo de data
     if (etapa === "escolher-data") {
         containerData.style.display = "flex";
         btnAgendar.innerText = "Confirmar Agendamento";
@@ -161,44 +163,53 @@ btnAgendar.addEventListener("click", () => {
         return;
     }
 
+    // Passo 2: Confirmar e enviar para o carrinho
     if (etapa === "confirmar") {
-    const nomeClienteLogado = localStorage.getItem("usuarioLogado");
+        const nomeClienteLogado = localStorage.getItem("usuarioLogado");
     
         if (!nomeClienteLogado) {
-            alert("Por favor, faça login para realizar o pedido!");
+            mostrarToast("Por favor, faça login para adicionar itens ao carrinho!");
+            // Opcional: redirecionar para o login
+            // window.location.href = 'padaria-login.html';
             return;
         }
 
         if (!inputData.value) {
-            alert("Escolha uma data para retirada!");
+            mostrarToast("Escolha uma data para retirada!");
             return;
         }
 
-        // Criamos o objeto do pedido
-        const novoPedido = {
-            id: Math.floor(1000 + Math.random() * 9000),
-            cliente: nomeClienteLogado,
-            dataPedido: new Date().toLocaleDateString('pt-BR'),
-            dataRetirada: inputData.value,
-            produto: produtoAtual.tituloproduto,
+        // Criamos o objeto EXATAMENTE como o carrinho.js e funcionalidades.js esperam
+        const precoAtual = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
+        
+        const itemParaCarrinho = {
+            id: produtoAtual.id || Math.floor(1000 + Math.random() * 9000), // ID do produto
+            nome: produtoAtual.tituloproduto,
+            preco: extrairNumeroPreco(precoAtual),
             quantidade: quantidade,
-            valorTotal: extrairNumeroPreco(produtoAtual.precoOferta || produtoAtual.preco) * quantidade,
-            status: "Pendente"
+            dataRetirada: inputData.value.split('-').reverse().join('/') // Formata a data para DD/MM/AAAA
         };
 
-        // Salvamos no localStorage (a "ponte" para o admin)
-        const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-        pedidosAtuais.push(novoPedido);
-        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
+        // Resgatamos o carrinho atual do localStorage ou criamos um array vazio
+        let carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
+        
+        // Adicionamos o novo item
+        carrinhoAtual.push(itemParaCarrinho);
+        
+        // Salvamos de volta no localStorage na chave 'carrinho'
+        localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
 
-        // Feedback para o cliente
-        alert(`Pedido #${novoPedido.id} realizado com sucesso! Aguardamos você na data escolhida.`);
+        // Feedback visual mais agradável que o 'alert'
+        mostrarToast(`${produtoAtual.tituloproduto} adicionado ao carrinho!`);
 
-        // Resetar a interface sem sair da página
+        // Resetar a interface do botão para futuros cliques
         containerData.style.display = "none";
         inputData.value = "";
         btnAgendar.innerText = "Escolher Data";
         etapa = "escolher-data";
+
+        // MÁGICA ACONTECE AQUI: Atualiza os números e abre a aba lateral!
+        abrirCarrinho(); 
     }
 });
 

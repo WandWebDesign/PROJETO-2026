@@ -290,52 +290,42 @@ function filtrarProdutosAdmin() {
     });
 }
 
-// ENTRADA DE DADOS - PEDIDOS
-document.addEventListener('DOMContentLoaded', () => {
-    carregarPedidos();
-});
+// =======================================================
+// ENTRADA DE DADOS - PEDIDOS (Atualizado para o novo Carrinho)
+// =======================================================
 
-function carregarPedidos() {
-    // Alvo correto: a mesma grade usada para os produtos
-    const gridAdmin = document.getElementById('grid-admin-produtos'); 
-    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-
-    gridAdmin.innerHTML = '';
-
-    if (pedidos.length === 0) {
-        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; font-weight: bold; font-size: 1.2rem; color: var(--cafe-claro); padding: 40px;">Nenhum pedido recebido ainda. 🥖</p>';
-        return;
+// 1. Renderiza os pedidos com o seletor de Status
+// =======================================================
+// LÓGICA DE FORMATAÇÃO DE UNIDADES (Kg/g vs Unidades)
+// =======================================================
+function formatarQuantidadeProduto(nomeProduto, quantidadeEscolhida) {
+    const nomeLimpo = nomeProduto.toLowerCase();
+    
+    // Lista de palavras que indicam que o produto é vendido a cada 100g
+    const palavrasPeso = ['mortadela', 'presunto', 'mussarela', 'queijo', 'salame', 'peito de peru', 'apresuntado', 'frios', '100g'];
+    
+    // Verifica se alguma dessas palavras existe no nome do produto
+    const vendidoPorPeso = palavrasPeso.some(palavra => nomeLimpo.includes(palavra));
+    
+    if (vendidoPorPeso) {
+        const totalGramas = quantidadeEscolhida * 100;
+        
+        if (totalGramas >= 1000) {
+            // Se passou de 1000g, divide por 1000 para virar Kg (Ex: 1500 / 1000 = 1,5 kg)
+            let kilos = totalGramas / 1000;
+            return kilos.toString().replace('.', ',') + ' kg';
+        } else {
+            return totalGramas + ' g';
+        }
     }
-
-    pedidos.forEach(pedido => {
-        // Define a cor baseada no status
-        let corStatus = "var(--dourado-suave)";
-        if(pedido.status === "Concluído") corStatus = "var(--cafe-escuro)";
-        else if(pedido.status === "Pendente") corStatus = "var(--vermelho-alerta)";
-
-        const card = `
-            <div class="card-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
-                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})" title="Cancelar Pedido">✖</button>
-                <h5>${pedido.cliente} • Retirada: ${pedido.dataRetirada || pedido.data}</h5>
-                <h3>Pedido #${pedido.id}</h3>
-                <div class="preco">R$ ${pedido.valor.toFixed(2).replace('.', ',')}</div>
-                <p style="color: ${corStatus}; font-weight: 800; margin-bottom: 15px;">${pedido.status}</p>
-                
-                <button class="btn-editar-card" onclick="alert('Itens do pedido:\\n${pedido.itens.map(i => i.quantidade + 'x ' + i.nome).join('\\n')}')">Ver Detalhes</button>
-            </div>
-        `;
-        gridAdmin.innerHTML += card;
-    });
+    
+    // Se não for um produto de peso, o padrão é unidade
+    return quantidadeEscolhida + ' un';
 }
 
-// Função para deletar um pedido
-function removerPedido(id) {
-    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    pedidos = pedidos.filter(p => p.id !== id);
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
-    carregarPedidos(); // Atualiza a tela
-}
-
+// =======================================================
+// RENDERIZAÇÃO DOS PEDIDOS COM O NOVO DESIGN
+// =======================================================
 function mostrarPedidosNoAdmin() {
     const gridAdmin = document.getElementById('grid-admin-produtos');
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
@@ -343,30 +333,114 @@ function mostrarPedidosNoAdmin() {
     gridAdmin.innerHTML = '';
 
     if (pedidos.length === 0) {
-        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px;">Nenhum pedido novo por enquanto. ☕</p>';
+        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px; font-size: 1.2rem; font-weight: bold; color: var(--cafe-claro);">Nenhum pedido novo. ☕</p>';
         return;
     }
 
     pedidos.forEach(pedido => {
+        // Cores temáticas para o cabeçalho
+        const cores = {
+            "Pendente": "#D9534F",    // Vermelho 
+            "Em produção": "#F0AD4E", // Laranja/Dourado
+            "Finalizado": "#5CB85C"   // Verde
+        };
+        const corCabecalho = cores[pedido.status] || '#A89F98';
+
+        // 1. Gera a lista de produtos formatada
+        let listaProdutosHTML = '';
+        pedido.itens.forEach(item => {
+            // Aqui usamos nossa nova função inteligente!
+            const qtdFormatada = formatarQuantidadeProduto(item.nome, item.quantidade);
+            
+            const infoData = item.dataRetirada 
+                ? `<span style="font-size: 0.75rem; color: #5CB85C; display: block; font-weight: 800; margin-top: 3px;">📅 Agendado: ${item.dataRetirada}</span>` 
+                : `<span style="font-size: 0.75rem; color: var(--cafe-claro); display: block; margin-top: 3px;">🛒 Retirada Imediata</span>`;
+
+            listaProdutosHTML += `
+                <li>
+                    <div style="flex: 1; padding-right: 10px;">
+                        <span style="font-weight: 800; color: var(--cafe-escuro);">${item.nome}</span>
+                        ${infoData}
+                    </div>
+                    <strong>${qtdFormatada}</strong>
+                </li>
+            `;
+        });
+
+        // 2. Monta a nova "Comanda"
         const card = `
-            <div class="card-admin">
-                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})">✖</button>
-                <h5>Cliente: ${pedido.cliente}</h5>
-                <p>Retirada: <strong>${pedido.dataRetirada}</strong></p>
-                <h3>${pedido.quantidade}x ${pedido.produto}</h3>
-                <div class="preco">Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}</div>
-                <p style="color: #D4AF37; font-weight: bold; margin-top: 10px;">Status: ${pedido.status}</p>
+            <div class="card-pedido-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
+                
+                <div class="pedido-header" style="background-color: ${corCabecalho};">
+                    <div>
+                        <h3>#${pedido.id}</h3>
+                        <span class="data">${pedido.dataPedido}</span>
+                    </div>
+                    <button class="btn-remover-pedido" onclick="removerPedido(${pedido.id})" title="Apagar Pedido">✖</button>
+                </div>
+
+                <div class="pedido-body">
+                    <div class="pedido-cliente">
+                        <div class="icone-user">👤</div>
+                        <h5>${pedido.cliente}</h5>
+                    </div>
+                    
+                    <ul class="pedido-itens">
+                        ${listaProdutosHTML}
+                    </ul>
+
+                    <div class="pedido-total">
+                        Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}
+                    </div>
+                </div>
+                
+                <div class="pedido-footer">
+                    <label>Status da Produção:</label>
+                    <select onchange="alterarStatusPedido(${pedido.id}, this.value)">
+                        <option value="Pendente" ${pedido.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
+                        <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
+                        <option value="Finalizado" ${pedido.status === 'Finalizado' ? 'selected' : ''}>✅ Finalizado</option>
+                    </select>
+                </div>
             </div>
         `;
+        
         gridAdmin.innerHTML += card;
     });
 }
 
-// Função para você excluir pedidos da lista
+// 2. Função que sincroniza o status entre Admin e Cliente
+function alterarStatusPedido(idPedido, novoStatus) {
+    // A. Atualizar na lista do Admin
+    let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    const indexAdmin = pedidosAdmin.findIndex(p => p.id === idPedido);
+    
+    if (indexAdmin !== -1) {
+        pedidosAdmin[indexAdmin].status = novoStatus;
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
+    }
+
+    // B. Atualizar no Histórico do Cliente (para ele ver na página dele)
+    let historicoClientes = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+    const indexCliente = historicoClientes.findIndex(p => p.id === idPedido);
+    
+    if (indexCliente !== -1) {
+        historicoClientes[indexCliente].status = novoStatus;
+        localStorage.setItem('historicoPedidos', JSON.stringify(historicoClientes));
+    }
+
+    if(typeof mostrarToast === 'function') mostrarToast(`Pedido #${idPedido} agora está ${novoStatus}!`);
+    mostrarPedidosNoAdmin(); // Recarrega a visualização
+}
+
+// Função única e segura para excluir pedidos
 function removerPedido(id) {
-    if(confirm("Deseja remover este pedido da lista?")) {
+    if(confirm("Tem certeza que deseja apagar este pedido do painel?")) {
         let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+        // Filtra para manter apenas os pedidos que NÃO tem o id selecionado
         pedidos = pedidos.filter(p => p.id !== id);
+        
+        // Salva no banco e recarrega a tela
         localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
         mostrarPedidosNoAdmin();
     }

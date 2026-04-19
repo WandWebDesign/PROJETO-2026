@@ -399,3 +399,96 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(217, 83, 79, 0.4);
 }
+
+/* ================== DESIGN DOS CARDS DE PEDIDO (COMANDA) ================== */
+.card-pedido-admin {
+    background: var(--branco);
+    border-radius: 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: 0.3s;
+    overflow: hidden; /* Mantém o cabeçalho colorido dentro dos cantos arredondados */
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.card-pedido-admin:hover { 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12); 
+    transform: translateY(-4px); 
+}
+
+/* Cabeçalho colorido baseado no Status */
+.pedido-header {
+    padding: 15px 20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pedido-header h3 { margin: 0; font-size: 1.2rem; font-weight: 900; }
+.pedido-header .data { font-size: 0.8rem; font-weight: 700; opacity: 0.9; }
+
+/* Corpo da comanda */
+.pedido-body { padding: 20px; flex-grow: 1; }
+
+.pedido-cliente { 
+    display: flex; align-items: center; gap: 10px; margin-bottom: 15px; 
+}
+.pedido-cliente .icone-user { 
+    background: var(--creme-fundo); width: 35px; height: 35px; 
+    border-radius: 50%; display: flex; align-items: center; 
+    justify-content: center; font-size: 1.1rem; 
+}
+.pedido-cliente h5 { margin: 0; font-size: 1rem; color: var(--cafe-escuro); font-weight: 800; text-transform: capitalize; }
+
+/* Lista de Produtos Formatada */
+.pedido-itens { 
+    list-style: none; padding: 0; margin: 0 0 15px 0; 
+    border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 15px; 
+}
+
+.pedido-itens li { 
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.95rem; margin-bottom: 10px; color: var(--cafe-claro); 
+}
+
+.pedido-itens li strong { 
+    color: var(--cafe-escuro); background: var(--creme-fundo); 
+    padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap;
+}
+
+.pedido-total { 
+    font-size: 1.3rem; font-weight: 900; color: var(--dourado-suave); 
+    text-align: right; margin-top: 15px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 15px;
+}
+
+/* Rodapé de Ações */
+.pedido-footer { 
+    padding: 15px 20px; background: var(--fundo-admin); 
+    border-top: 1px solid rgba(0,0,0,0.05); 
+}
+
+.pedido-footer label { 
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; 
+    font-weight: 800; color: var(--cafe-claro); display: block; margin-bottom: 8px; 
+}
+
+.pedido-footer select { 
+    width: 100%; padding: 10px 15px; border-radius: 8px; 
+    border: 1px solid rgba(0,0,0,0.1); font-weight: 800; 
+    color: var(--cafe-escuro); cursor: pointer; outline: none; 
+    background-color: var(--branco);
+}
+.pedido-footer select:focus { border-color: var(--dourado-suave); }
+
+/* Botão de excluir discreto no cabeçalho */
+.btn-remover-pedido { 
+    position: absolute; top: 12px; right: 12px; 
+    background: rgba(255,255,255,0.25); border: none; color: white; 
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
+    transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.btn-remover-pedido:hover { background: rgba(0,0,0,0.3); }
