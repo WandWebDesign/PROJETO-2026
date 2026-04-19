@@ -29,33 +29,39 @@ function abrirBancoAdmin() {
 }
 
 // 2. LER (Carrega a grade)
+// 2. LER (Carrega a grade de Produtos, Pedidos ou Vendas)
 async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
-    document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
+    const gridAdmin = document.getElementById('grid-admin-produtos'); 
     
+    // Atualiza o título e o botão ativo na barra lateral
+    document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
     const btnAtivo = document.getElementById(`btn-${setor}`);
     if(btnAtivo) btnAtivo.classList.add('ativo');
 
-    // Se clicar em pedidos, usamos a lógica do localStorage
-    // Dentro de carregarSetorAdmin(setor)...
+    // --- LÓGICA DE EXIBIÇÃO DIFERENCIADA ---
     
-    // Esconde botões que não devem aparecer nas telas de gestão
-    if (setor === 'pedidos' || setor === 'vendas') {
+    if (setor === 'vendas') {
+        // VENDAS: Ocupa a largura total (Dashboard)
+        gridAdmin.style.display = 'block'; 
         document.querySelector('.acoes-topo').style.display = 'none'; 
-        document.querySelector('.busca-admin-container').style.display = 'none'; // Esconde barra de pesquisa em vendas
-        
-        if(setor === 'pedidos') {
-            document.querySelector('.busca-admin-container').style.display = 'block'; // Volta pesquisa pros pedidos
-            mostrarPedidosNoAdmin();
-        } else {
-            mostrarVendasNoAdmin(); // Chama nossa nova tela dinâmica!
-        }
-    } else {
+        document.querySelector('.busca-admin-container').style.display = 'none';
+        mostrarVendasNoAdmin();
+    } 
+    else if (setor === 'pedidos') {
+        // PEDIDOS: Volta a ser GRELHA para os cartões ficarem lado a lado
+        gridAdmin.style.display = 'grid'; 
+        document.querySelector('.acoes-topo').style.display = 'none'; 
+        document.querySelector('.busca-admin-container').style.display = 'block';
+        mostrarPedidosNoAdmin();
+    } 
+    else {
+        // PRODUTOS (Padaria, Açougue, etc): Mantém a GRELHA de produtos
+        gridAdmin.style.display = 'grid'; 
         document.querySelector('.acoes-topo').style.display = 'block';
         document.querySelector('.busca-admin-container').style.display = 'block';
-        // Código do IndexedDB normal...
-        // Lógica normal que você já tem para carregar produtos do banco...
+        
         const db = await abrirBancoAdmin();
         const tx = db.transaction(setor, 'readonly');
         const store = tx.objectStore(setor);
@@ -63,7 +69,6 @@ async function carregarSetorAdmin(setor) {
         req.onsuccess = () => { desenharGradeAdmin(req.result); };
     }
 }
-
 function desenharGradeAdmin(produtos) {
     const grid = document.getElementById('grid-admin-produtos');
     grid.innerHTML = '';
@@ -488,6 +493,9 @@ function removerPedido(id) {
 // =======================================================
 // LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
 // =======================================================
+// =======================================================
+// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
+// =======================================================
 function mostrarVendasNoAdmin() {
     const gridAdmin = document.getElementById('grid-admin-produtos');
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
@@ -531,23 +539,23 @@ function mostrarVendasNoAdmin() {
         
         htmlRanking += `
             <tr>
-                <td class="item-nome">${nomeProd}</td>
-                <td class="item-qtd">${qtdVisual}</td>
+                <td class="item-nome" style="font-size: 1.1rem; padding: 15px 0;">${nomeProd}</td>
+                <td class="item-qtd" style="font-size: 1.1rem; padding: 15px 0;">${qtdVisual}</td>
             </tr>
         `;
     });
 
     if(htmlRanking === '') {
-        htmlRanking = '<tr><td colspan="2" style="text-align:center; color:var(--cafe-claro); padding: 20px;">Nenhuma venda registrada ainda.</td></tr>';
+        htmlRanking = '<tr><td colspan="2" style="text-align:center; color:var(--cafe-claro); padding: 30px;">Nenhuma venda registrada ainda.</td></tr>';
     }
 
-    // 4. Monta a Tela (Unindo as métricas e o Top 5 numa view só)
+    // 4. Monta a Tela (Design Corrigido: Sem paddings duplos e largura total)
     gridAdmin.innerHTML = `
-        <div style="width: 100%; padding: 0 40px; margin-bottom: 20px;">
-            <p style="color: var(--cafe-claro);">Os dados abaixo consideram apenas pedidos <strong>Finalizados</strong> ou <strong>Em Produção</strong>.</p>
+        <div style="margin-bottom: 25px;">
+            <p style="color: var(--cafe-claro); font-size: 1rem;">Os dados abaixo consideram apenas pedidos <strong style="color: var(--cafe-escuro);">Finalizados</strong> ou <strong style="color: var(--cafe-escuro);">Em Produção</strong>.</p>
         </div>
 
-        <section class="dashboard-vendas">
+        <section class="dashboard-vendas" style="padding: 0; margin-bottom: 40px;">
             <div class="metric-card">
                 <h4>Faturamento Confirmado</h4>
                 <div class="valor">R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}</div>
@@ -564,9 +572,9 @@ function mostrarVendasNoAdmin() {
             </div>
         </section>
 
-        <section style="padding: 0 40px; width: 100%; max-width: 600px;">
-            <div class="card-admin">
-                <h3 style="margin-bottom: 10px; border-bottom: 2px solid var(--creme-fundo); padding-bottom: 10px;">🏆 Top 5 Produtos Mais Vendidos</h3>
+        <section style="width: 100%;">
+            <div class="card-admin" style="width: 100%; padding: 30px;">
+                <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--creme-fundo); padding-bottom: 15px; font-size: 1.3rem;">🏆 Top 5 Produtos Mais Vendidos</h3>
                 <table class="ranking-tabela">
                     ${htmlRanking}
                 </table>
