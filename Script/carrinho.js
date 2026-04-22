@@ -160,6 +160,7 @@ function confirmarRemocao() {
 }
 
 // O NOVO FLUXO DE RECIBO AO FINALIZAR
+// O NOVO FLUXO DE RECIBO AO FINALIZAR
 function finalizarCompra(valorTotal, totalItens) {
     const estaLogado = localStorage.getItem('usuarioLogado');
 
@@ -176,11 +177,11 @@ function finalizarCompra(valorTotal, totalItens) {
     }
 
     const pagamentoEscolhido = formaPagamento.value;
-    const codigo = Math.floor(100000 + Math.random() * 900000);
+    const codigo = Math.floor(100000 + Math.random() * 900000); // Código de 6 dígitos
     const dataHoje = new Date().toLocaleDateString('pt-BR');
-
-    // --- NOVA LÓGICA: SALVAR NO HISTÓRICO ---
     const carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
+
+    // --- 1. SALVAR NO HISTÓRICO DO CLIENTE (Meus Pedidos) ---
     const novoPedidoFinalizado = {
         id: codigo,
         dataPedido: dataHoje,
@@ -190,12 +191,33 @@ function finalizarCompra(valorTotal, totalItens) {
         pagamento: pagamentoEscolhido
     };
 
-    // Pega o histórico antigo e adiciona o novo
     let historico = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
     historico.push(novoPedidoFinalizado);
     localStorage.setItem('historicoPedidos', JSON.stringify(historico));
 
-    // Preenche o Modal
+
+    // --- 2. NOVA LÓGICA: ENVIAR PARA O PAINEL ADMIN ---
+    // Criamos o objeto com os dados que a administração precisa ver
+    const novoPedidoAdmin = {
+        id: codigo,
+        cliente: estaLogado,       // Nome de quem está comprando
+        dataPedido: dataHoje,
+        itens: carrinhoAtual,      // Lista completa dos produtos no carrinho (nome, qtd, data de retirada)
+        valorTotal: valorTotal,
+        status: "Pendente",        // Status inicial para o admin processar
+        pagamento: pagamentoEscolhido
+    };
+
+    // Pegamos a lista atual do admin e adicionamos o pedido novo
+    const pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    pedidosAdmin.push(novoPedidoAdmin);
+    
+    // Salvamos na ponte de comunicação do Admin
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
+    // ----------------------------------------------------
+
+
+    // --- 3. PREENCHER E MOSTRAR O MODAL DE SUCESSO ---
     document.getElementById('display-codigo').innerText = codigo;
     document.getElementById('modal-qtd').innerText = totalItens + " un";
     document.getElementById('modal-total').innerText = formatarDinheiroCheckout(valorTotal);

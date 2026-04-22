@@ -1,89 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-    renderizarHistorico();
-});
+/* =======================================================
+   LÓGICA DA PÁGINA: MEUS PEDIDOS (CLIENTE)
+======================================================= */
 
-/**
- * Lógica Educativa:
- * Para calcular se o cancelamento é permitido, transformamos a data de retirada (string)
- * em um objeto Date do JavaScript e comparamos com a hora atual.
- */
-function podeCancelar(dataRetiradaStr, nomeProduto) {
-    // 1. Identifica o prazo baseado no produto
-    const horasLimite = (nomeProduto.toLowerCase().includes("pão francês")) ? 2 : 12;
-
-    // 2. Converte a string "DD/MM/YYYY" para um objeto Date real
-    // Assumimos o horário de 07:00 AM (abertura da padaria) como base para o cálculo
-    const [dia, mes, ano] = dataRetiradaStr.split('/');
-    const dataRetirada = new Date(ano, mes - 1, dia, 7, 0, 0); 
-    
-    const agora = new Date();
-    
-    // 3. Calcula a diferença em milissegundos e converte para horas
-    const diferencaMilissegundos = dataRetirada - agora;
-    const diferencaHoras = diferencaMilissegundos / (1000 * 60 * 60);
-
-    return diferencaHoras >= horasLimite;
-}
-
-function renderizarHistorico() {
-    const container = document.getElementById('container-historico');
-    const historico = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
-
-    if (historico.length === 0) {
-        container.innerHTML = `<p style="text-align:center; padding:50px;">Nenhum pedido encontrado.</p>`;
-        return;
-    }
-
-    container.innerHTML = '';
-    
-    // Inverte para mostrar os mais recentes primeiro
-    [...historico].reverse().forEach((pedido, indexInvertido) => {
-        // Recupera o índice real para exclusão correta
-        const realIndex = historico.length - 1 - indexInvertido;
-
-        // Verifica se TODOS os itens do pedido ainda podem ser cancelados
-        // Se um item especial estiver fora do prazo, o pedido todo fica travado
-        const cancelamentoPermitido = pedido.itens.every(item => {
-            if (!item.dataRetirada) return true; // Itens sem agendamento (imediato) são tratados na política da loja
-            return podeCancelar(item.dataRetirada, item.nome);
-        });
-
-        const div = document.createElement('div');
-        div.className = 'card-pedido-finalizado';
-        
-        // Montamos a lista de itens dentro do card
-        const itensHTML = pedido.itens.map(item => `
-            <li>${item.quantidade}x ${item.nome} ${item.dataRetirada ? `(📅 ${item.dataRetirada})` : '(Retirada Imediata)'}</li>
-        `).join('');
-
-        div.innerHTML = `
-            <div class="pedido-info">
-                <span class="data-compra">Realizado em ${pedido.dataPedido}</span>
-                <h2>Pedido #${pedido.id}</h2>
-                <ul class="lista-itens-resumo">${itensHTML}</ul>
-                <p>Total: <strong>R$ ${pedido.total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></p>
-                <p style="font-size:0.8rem; color:#A89F98;">Pagamento: ${pedido.pagamento}</p>
-            </div>
-            <div class="acoes-historico">
-                <div class="codigo-tag">${pedido.id}</div>
-                
-                ${cancelamentoPermitido 
-                    ? `<button class="btn-cancelar-pedido" onclick="cancelarPedido(${realIndex})">Cancelar Pedido</button>`
-                    : `<span class="prazo-expirado">Prazo de cancelamento encerrado</span>`
-                }
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// 1. Variável global para armazenar qual pedido será cancelado
 let indiceDoPedidoParaApagar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     renderizarHistorico();
 
-    // 2. Configura o clique do botão "Sim, Cancelar" dentro do Modal Visual
+    // Configura o clique do botão "Sim, Cancelar" dentro do Modal Visual
     const btnConfirmar = document.getElementById('btn-confirmar-cancelar');
     if (btnConfirmar) {
         btnConfirmar.addEventListener('click', () => {
@@ -121,6 +45,9 @@ function podeCancelar(dataRetiradaStr, nomeProduto) {
     return diferencaHoras >= horasLimite;
 }
 
+/**
+ * Renderiza os pedidos na tela e verifica o Status (Pendente, Produção, Finalizado)
+ */
 function renderizarHistorico() {
     const container = document.getElementById('container-historico');
     const historico = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
@@ -137,31 +64,69 @@ function renderizarHistorico() {
     [...historico].reverse().forEach((pedido, indexInvertido) => {
         const realIndex = historico.length - 1 - indexInvertido;
 
-        // Verifica se todos os itens permitem cancelamento
-        const cancelamentoPermitido = pedido.itens.every(item => {
+        // 1. LEITURA DO STATUS (Com valor padrão "Pendente" para pedidos antigos)
+        const statusAtual = pedido.status || "Pendente";
+        
+        // 2. DEFINIÇÃO DE CORES DA TAG DE STATUS
+        const coresStatus = {
+            "Pendente": "#D9534F",    // Vermelho
+            "Em produção": "#F0AD4E", // Dourado/Laranja
+            "Finalizado": "#5CB85C"   // Verde
+        };
+        const corTag = coresStatus[statusAtual] || "#A89F98";
+
+        // 3. AVISO DE PEDIDO FINALIZADO
+        const avisoFinalizado = statusAtual === "Finalizado" 
+            ? `<div style="background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 8px; margin: 15px 0; font-weight: 800; text-align: center; border: 1px solid #c8e6c9;">✅ Seu pedido está pronto para retirada! Apresente o código no balcão.</div>` 
+            : '';
+
+        // 4. LÓGICA DE CANCELAMENTO APRIMORADA
+        // Agora o cliente só pode cancelar se o pedido for "Pendente" E estiver no prazo de horas.
+        const dentroDoPrazo = pedido.itens.every(item => {
             if (!item.dataRetirada) return true; 
             return podeCancelar(item.dataRetirada, item.nome);
         });
+        const cancelamentoPermitido = dentroDoPrazo && statusAtual === "Pendente";
 
         const div = document.createElement('div');
         div.className = 'card-pedido-finalizado';
+        // Adiciona uma bordinha colorida no card combinando com o status
+        div.style.borderTop = `5px solid ${corTag}`;
         
         const itensHTML = pedido.itens.map(item => `
             <li>${item.quantidade}x ${item.nome} ${item.dataRetirada ? `(📅 ${item.dataRetirada})` : '(Retirada Imediata)'}</li>
         `).join('');
 
+        // Define a mensagem do botão se não puder cancelar
+        let textoBloqueio = "Prazo encerrado";
+        if(statusAtual !== "Pendente") textoBloqueio = "Pedido já em andamento";
+
         div.innerHTML = `
             <div class="pedido-info">
-                <span class="data-compra">Realizado em ${pedido.dataPedido}</span>
+                <div style="margin-bottom: 15px;">
+                    <span class="data-compra">Realizado em ${pedido.dataPedido}</span>
+                </div>
+                
                 <h2>Pedido #${pedido.id}</h2>
+                ${avisoFinalizado}
                 <ul class="lista-itens-resumo">${itensHTML}</ul>
                 <p>Total: <strong>R$ ${pedido.total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong></p>
+                <p style="font-size:0.8rem; color:#A89F98; margin-top: 5px;">Pagamento na retirada: ${pedido.pagamento || 'Não informado'}</p>
             </div>
-            <div class="acoes-historico">
-                <div class="codigo-tag">${pedido.id}</div>
+            
+            <div class="acoes-historico" style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 180px;">
+                
+                <span style="background-color: ${corTag}; color: white; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; width: 100%; text-align: center; box-sizing: border-box;">
+                    ${statusAtual}
+                </span>
+                
+                <div class="codigo-tag" style="width: 100%; box-sizing: border-box; text-align: center; margin: 0;">
+                    ${pedido.id}
+                </div>
+                
                 ${cancelamentoPermitido 
-                    ? `<button class="btn-cancelar-pedido" onclick="cancelarPedido(${realIndex})">Cancelar Pedido</button>`
-                    : `<span class="prazo-expirado">Prazo de cancelamento encerrado</span>`
+                    ? `<button class="btn-cancelar-pedido" onclick="cancelarPedido(${realIndex})" style="margin-top: 0;">Cancelar Pedido</button>`
+                    : `<span class="prazo-expirado" style="margin-top: 0;">${textoBloqueio}</span>`
                 }
             </div>
         `;
@@ -169,7 +134,7 @@ function renderizarHistorico() {
     });
 }
 
-// 3. Funções para controlar o Modal Visual
+// Funções para controlar o Modal Visual
 function cancelarPedido(index) {
     indiceDoPedidoParaApagar = index;
     const modal = document.getElementById('modal-cancelamento');

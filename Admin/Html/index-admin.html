@@ -35,7 +35,7 @@
                     <span class="icone">📋</span><span class="texto-circulo">Pedidos</span>
                 </button>
 
-                <button class="btn-circulo btn-futuro" title="Em breve">
+                <button class="btn-circulo" onclick="carregarSetorAdmin('vendas')" id="btn-vendas">
                     <span class="icone">📈</span><span class="texto-circulo">Vendas</span>
                 </button>
             </nav>
@@ -48,19 +48,21 @@
                     <h1 id="titulo-setor-admin">Padaria</h1>
                 </div>
 
-                <div>
-                    <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
-                    <span class="icone">↩️</span>
-                    <span class="texto-circulo">Voltar para Loja</span>
-                     </a>
-                </div>
-                
-                <div class="busca-admin-container">
-                    <input type="text" id="busca-admin" placeholder="Procurar produto no setor..." onkeyup="filtrarProdutosAdmin()">
-                </div>
+                <div class="topbar-acoes-direita">
+                    
+                    <div class="busca-admin-container">
+                        <input type="text" id="busca-admin" placeholder="Procurar..." onkeyup="filtrarProdutosAdmin()">
+                    </div>
 
-                <div class="acoes-topo">
-                    <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
+                    <div class="acoes-topo">
+                        <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
+                    </div>
+
+                    <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
+                        <span class="icone">↩️</span>
+                        <span class="texto-circulo">Sair</span>
+                    </a>
+
                 </div>
             </header>
 
@@ -153,5 +155,6 @@
     <div id="toast-container"></div>
     <script src="../../Script/funcionalidades.js"></script>
     <script src="../Script/admin-logic.js"></script>
+
 </body>
 </html>

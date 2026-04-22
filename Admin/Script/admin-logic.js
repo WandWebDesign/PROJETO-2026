@@ -29,42 +29,46 @@ function abrirBancoAdmin() {
 }
 
 // 2. LER (Carrega a grade)
+// 2. LER (Carrega a grade de Produtos, Pedidos ou Vendas)
 async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
-    document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
+    const gridAdmin = document.getElementById('grid-admin-produtos'); 
     
-    // Atualiza o botão ativo no menu lateral
+    // Atualiza o título e o botão ativo na barra lateral
+    document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
     const btnAtivo = document.getElementById(`btn-${setor}`);
     if(btnAtivo) btnAtivo.classList.add('ativo');
 
-    // REGRA NOVA: Se o setor for pedidos, carrega a tela de pedidos e esconde o botão de adicionar produto
-    const acoesTopo = document.querySelector('.acoes-topo');
-    if (setor === 'pedidos') {
-        if(acoesTopo) acoesTopo.style.display = 'none'; 
-        carregarPedidos();
-        return; 
-    } else {
-        if(acoesTopo) acoesTopo.style.display = 'block';
-    }
-
-    // Lógica normal de carregar produtos do IndexedDB
-    try {
+    // --- LÓGICA DE EXIBIÇÃO DIFERENCIADA ---
+    
+    if (setor === 'vendas') {
+        // VENDAS: Ocupa a largura total (Dashboard)
+        gridAdmin.style.display = 'block'; 
+        document.querySelector('.acoes-topo').style.display = 'none'; 
+        document.querySelector('.busca-admin-container').style.display = 'none';
+        mostrarVendasNoAdmin();
+    } 
+    else if (setor === 'pedidos') {
+        // PEDIDOS: Volta a ser GRELHA para os cartões ficarem lado a lado
+        gridAdmin.style.display = 'grid'; 
+        document.querySelector('.acoes-topo').style.display = 'none'; 
+        document.querySelector('.busca-admin-container').style.display = 'block';
+        mostrarPedidosNoAdmin();
+    } 
+    else {
+        // PRODUTOS (Padaria, Açougue, etc): Mantém a GRELHA de produtos
+        gridAdmin.style.display = 'grid'; 
+        document.querySelector('.acoes-topo').style.display = 'block';
+        document.querySelector('.busca-admin-container').style.display = 'block';
+        
         const db = await abrirBancoAdmin();
-        if (!db.objectStoreNames.contains(setor)) return;
-
         const tx = db.transaction(setor, 'readonly');
         const store = tx.objectStore(setor);
         const req = store.getAll();
-
-        req.onsuccess = () => {
-            desenharGradeAdmin(req.result);
-        };
-    } catch (erro) {
-        console.error(erro);
+        req.onsuccess = () => { desenharGradeAdmin(req.result); };
     }
 }
-
 function desenharGradeAdmin(produtos) {
     const grid = document.getElementById('grid-admin-produtos');
     grid.innerHTML = '';
@@ -292,59 +296,289 @@ async function salvarProduto() {
     }
 }
 
-// 6. BUSCA VISUAL
+// 6. BUSCA VISUAL ATUALIZADA (Inteligente para Produtos e Pedidos)
 function filtrarProdutosAdmin() {
-    const termo = document.getElementById('busca-admin').value.toLowerCase();
-    const cards = document.querySelectorAll('.card-admin');
-    cards.forEach(card => {
-        const titulo = card.querySelector('h3').innerText.toLowerCase();
-        if(titulo.includes(termo)) card.style.display = 'flex';
-        else card.style.display = 'none';
-    });
+    // Pega o que o usuário digitou, transforma em minúsculas e tira os espaços em branco extras
+    const termo = document.getElementById('busca-admin').value.toLowerCase().trim();
+
+    // Cenário A: O Admin está na aba de Pedidos
+    if (setorAdminAtual === 'pedidos') {
+        const cardsPedidos = document.querySelectorAll('.card-pedido-admin');
+        
+        cardsPedidos.forEach(card => {
+            // Captura o código do pedido (ex: "#123456") e o nome do cliente
+            const codigo = card.querySelector('.pedido-header h3').innerText.toLowerCase();
+            const cliente = card.querySelector('.pedido-cliente h5').innerText.toLowerCase();
+            
+            // Verifica se o termo digitado bate com o código OU com o nome do cliente
+            if(codigo.includes(termo) || cliente.includes(termo)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    } 
+    // Cenário B: O Admin está nas abas de Produtos (Padaria, Açougue...)
+    else {
+        const cardsProdutos = document.querySelectorAll('.card-admin');
+        
+        cardsProdutos.forEach(card => {
+            const titulo = card.querySelector('h3').innerText.toLowerCase();
+            
+            if(titulo.includes(termo)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
 }
 
-// ENTRADA DE DADOS - PEDIDOS
-document.addEventListener('DOMContentLoaded', () => {
-    carregarPedidos();
-});
+// =======================================================
+// ENTRADA DE DADOS - PEDIDOS (Atualizado para o novo Carrinho)
+// =======================================================
 
-function carregarPedidos() {
-    // Alvo correto: a mesma grade usada para os produtos
-    const gridAdmin = document.getElementById('grid-admin-produtos'); 
+// 1. Renderiza os pedidos com o seletor de Status
+// =======================================================
+// LÓGICA DE FORMATAÇÃO DE UNIDADES (Kg/g vs Unidades)
+// =======================================================
+function formatarQuantidadeProduto(nomeProduto, quantidadeEscolhida) {
+    const nomeLimpo = nomeProduto.toLowerCase();
+    
+    // Lista de palavras que indicam que o produto é vendido a cada 100g
+    const palavrasPeso = ['mortadela', 'presunto', 'mussarela', 'queijo', 'salame', 'peito de peru', 'apresuntado', 'frios', '100g'];
+    
+    // Verifica se alguma dessas palavras existe no nome do produto
+    const vendidoPorPeso = palavrasPeso.some(palavra => nomeLimpo.includes(palavra));
+    
+    if (vendidoPorPeso) {
+        const totalGramas = quantidadeEscolhida * 100;
+        
+        if (totalGramas >= 1000) {
+            // Se passou de 1000g, divide por 1000 para virar Kg (Ex: 1500 / 1000 = 1,5 kg)
+            let kilos = totalGramas / 1000;
+            return kilos.toString().replace('.', ',') + ' kg';
+        } else {
+            return totalGramas + ' g';
+        }
+    }
+    
+    // Se não for um produto de peso, o padrão é unidade
+    return quantidadeEscolhida + ' un';
+}
+
+// =======================================================
+// RENDERIZAÇÃO DOS PEDIDOS COM O NOVO DESIGN
+// =======================================================
+function mostrarPedidosNoAdmin() {
+    const gridAdmin = document.getElementById('grid-admin-produtos');
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
 
     gridAdmin.innerHTML = '';
 
     if (pedidos.length === 0) {
-        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; font-weight: bold; font-size: 1.2rem; color: var(--cafe-claro); padding: 40px;">Nenhum pedido recebido ainda. 🥖</p>';
+        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px; font-size: 1.2rem; font-weight: bold; color: var(--cafe-claro);">Nenhum pedido novo. ☕</p>';
         return;
     }
 
     pedidos.forEach(pedido => {
-        // Define a cor baseada no status
-        let corStatus = "var(--dourado-suave)";
-        if(pedido.status === "Concluído") corStatus = "var(--cafe-escuro)";
-        else if(pedido.status === "Pendente") corStatus = "var(--vermelho-alerta)";
+        // Cores temáticas para o cabeçalho
+        const cores = {
+            "Pendente": "#D9534F",    // Vermelho 
+            "Em produção": "#F0AD4E", // Laranja/Dourado
+            "Finalizado": "#5CB85C"   // Verde
+        };
+        const corCabecalho = cores[pedido.status] || '#A89F98';
 
+        // 1. Gera a lista de produtos formatada
+        let listaProdutosHTML = '';
+        pedido.itens.forEach(item => {
+            // Aqui usamos nossa nova função inteligente!
+            const qtdFormatada = formatarQuantidadeProduto(item.nome, item.quantidade);
+            
+            const infoData = item.dataRetirada 
+                ? `<span style="font-size: 0.75rem; color: #5CB85C; display: block; font-weight: 800; margin-top: 3px;">📅 Agendado: ${item.dataRetirada}</span>` 
+                : `<span style="font-size: 0.75rem; color: var(--cafe-claro); display: block; margin-top: 3px;">🛒 Retirada Imediata</span>`;
+
+            listaProdutosHTML += `
+                <li>
+                    <div style="flex: 1; padding-right: 10px;">
+                        <span style="font-weight: 800; color: var(--cafe-escuro);">${item.nome}</span>
+                        ${infoData}
+                    </div>
+                    <strong>${qtdFormatada}</strong>
+                </li>
+            `;
+        });
+
+        // 2. Monta a nova "Comanda"
         const card = `
-            <div class="card-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
-                <button class="btn-deletar-card" onclick="removerPedido(${pedido.id})" title="Cancelar Pedido">✖</button>
-                <h5>${pedido.cliente} • Retirada: ${pedido.dataRetirada || pedido.data}</h5>
-                <h3>Pedido #${pedido.id}</h3>
-                <div class="preco">R$ ${pedido.valor.toFixed(2).replace('.', ',')}</div>
-                <p style="color: ${corStatus}; font-weight: 800; margin-bottom: 15px;">${pedido.status}</p>
+            <div class="card-pedido-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
                 
-                <button class="btn-editar-card" onclick="alert('Itens do pedido:\\n${pedido.itens.map(i => i.quantidade + 'x ' + i.nome).join('\\n')}')">Ver Detalhes</button>
+                <div class="pedido-header" style="background-color: ${corCabecalho};">
+                    <div>
+                        <h3>#${pedido.id}</h3>
+                        <span class="data">${pedido.dataPedido}</span>
+                    </div>
+                    <button class="btn-remover-pedido" onclick="removerPedido(${pedido.id})" title="Apagar Pedido">✖</button>
+                </div>
+
+                <div class="pedido-body">
+                    <div class="pedido-cliente">
+                        <div class="icone-user">👤</div>
+                        <h5>${pedido.cliente}</h5>
+                    </div>
+                    
+                    <ul class="pedido-itens">
+                        ${listaProdutosHTML}
+                    </ul>
+
+                    <div class="pedido-total">
+                        Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}
+                    </div>
+                </div>
+                
+                <div class="pedido-footer">
+                    <label>Status da Produção:</label>
+                    <select onchange="alterarStatusPedido(${pedido.id}, this.value)">
+                        <option value="Pendente" ${pedido.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
+                        <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
+                        <option value="Finalizado" ${pedido.status === 'Finalizado' ? 'selected' : ''}>✅ Finalizado</option>
+                    </select>
+                </div>
             </div>
         `;
+        
         gridAdmin.innerHTML += card;
     });
 }
 
-// Função para deletar um pedido
+// 2. Função que sincroniza o status entre Admin e Cliente
+function alterarStatusPedido(idPedido, novoStatus) {
+    // A. Atualizar na lista do Admin
+    let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    const indexAdmin = pedidosAdmin.findIndex(p => p.id === idPedido);
+    
+    if (indexAdmin !== -1) {
+        pedidosAdmin[indexAdmin].status = novoStatus;
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
+    }
+
+    // B. Atualizar no Histórico do Cliente (para ele ver na página dele)
+    let historicoClientes = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+    const indexCliente = historicoClientes.findIndex(p => p.id === idPedido);
+    
+    if (indexCliente !== -1) {
+        historicoClientes[indexCliente].status = novoStatus;
+        localStorage.setItem('historicoPedidos', JSON.stringify(historicoClientes));
+    }
+
+    if(typeof mostrarToast === 'function') mostrarToast(`Pedido #${idPedido} agora está ${novoStatus}!`);
+    mostrarPedidosNoAdmin(); // Recarrega a visualização
+}
+
+// Função única e segura para excluir pedidos
 function removerPedido(id) {
-    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    pedidos = pedidos.filter(p => p.id !== id);
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
-    carregarPedidos(); // Atualiza a tela
+    if(confirm("Tem certeza que deseja apagar este pedido do painel?")) {
+        let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+        // Filtra para manter apenas os pedidos que NÃO tem o id selecionado
+        pedidos = pedidos.filter(p => p.id !== id);
+        
+        // Salva no banco e recarrega a tela
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+        mostrarPedidosNoAdmin();
+    }
+}
+
+// =======================================================
+// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
+// =======================================================
+// =======================================================
+// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
+// =======================================================
+function mostrarVendasNoAdmin() {
+    const gridAdmin = document.getElementById('grid-admin-produtos');
+    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    // Variáveis de cálculo
+    let faturamentoTotal = 0;
+    let totalPedidosConcluidos = 0;
+    let contagemProdutos = {};
+
+    // 1. O motor de cálculo: Vasculha todos os pedidos reais do banco local
+    pedidos.forEach(pedido => {
+        // Conta apenas pedidos Finalizados ou Em produção para métricas financeiras
+        if (pedido.status !== "Pendente") {
+            faturamentoTotal += pedido.valorTotal;
+            totalPedidosConcluidos++;
+
+            // Conta os produtos mais vendidos
+            pedido.itens.forEach(item => {
+                if (!contagemProdutos[item.nome]) {
+                    contagemProdutos[item.nome] = { qtd: 0, tipo: formatarQuantidadeProduto(item.nome, 1).replace(/[0-9]/g, '').trim() };
+                }
+                contagemProdutos[item.nome].qtd += item.quantidade;
+            });
+        }
+    });
+
+    // 2. Calcula Ticket Médio
+    let ticketMedio = totalPedidosConcluidos > 0 ? (faturamentoTotal / totalPedidosConcluidos) : 0;
+
+    // 3. Ordena o ranking dos Top 5 Produtos mais vendidos
+    const produtosRanking = Object.entries(contagemProdutos)
+        .sort((a, b) => b[1].qtd - a[1].qtd)
+        .slice(0, 5); // Pega só os 5 primeiros
+
+    let htmlRanking = '';
+    produtosRanking.forEach(prod => {
+        const nomeProd = prod[0];
+        const dadosProd = prod[1];
+        // Usa nossa função antiga para formatar kg, g ou un.
+        const qtdVisual = formatarQuantidadeProduto(nomeProd, dadosProd.qtd);
+        
+        htmlRanking += `
+            <tr>
+                <td class="item-nome" style="font-size: 1.1rem; padding: 15px 0;">${nomeProd}</td>
+                <td class="item-qtd" style="font-size: 1.1rem; padding: 15px 0;">${qtdVisual}</td>
+            </tr>
+        `;
+    });
+
+    if(htmlRanking === '') {
+        htmlRanking = '<tr><td colspan="2" style="text-align:center; color:var(--cafe-claro); padding: 30px;">Nenhuma venda registrada ainda.</td></tr>';
+    }
+
+    // 4. Monta a Tela (Design Corrigido: Sem paddings duplos e largura total)
+    gridAdmin.innerHTML = `
+        <div style="margin-bottom: 25px;">
+            <p style="color: var(--cafe-claro); font-size: 1rem;">Os dados abaixo consideram apenas pedidos <strong style="color: var(--cafe-escuro);">Finalizados</strong> ou <strong style="color: var(--cafe-escuro);">Em Produção</strong>.</p>
+        </div>
+
+        <section class="dashboard-vendas" style="padding: 0; margin-bottom: 40px;">
+            <div class="metric-card">
+                <h4>Faturamento Confirmado</h4>
+                <div class="valor">R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}</div>
+            </div>
+            
+            <div class="metric-card" style="border-left-color: var(--cafe-escuro);">
+                <h4>Pedidos Recebidos</h4>
+                <div class="valor">${totalPedidosConcluidos}</div>
+            </div>
+            
+            <div class="metric-card" style="border-left-color: #5cb85c;">
+                <h4>Ticket Médio</h4>
+                <div class="valor">R$ ${ticketMedio.toFixed(2).replace('.', ',')}</div>
+            </div>
+        </section>
+
+        <section style="width: 100%;">
+            <div class="card-admin" style="width: 100%; padding: 30px;">
+                <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--creme-fundo); padding-bottom: 15px; font-size: 1.3rem;">🏆 Top 5 Produtos Mais Vendidos</h3>
+                <table class="ranking-tabela">
+                    ${htmlRanking}
+                </table>
+            </div>
+        </section>
+    `;
 }

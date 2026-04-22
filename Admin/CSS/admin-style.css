@@ -71,8 +71,6 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
 }
 
-.btn-futuro { opacity: 0.5; cursor: not-allowed; }
-.btn-futuro:hover { transform: none; background-color: var(--creme-fundo); color: var(--cafe-claro); box-shadow: none; }
 
 .divisor-lateral { width: 50px; height: 2px; background-color: rgba(0,0,0,0.05); margin: 10px 0; }
 
@@ -93,18 +91,49 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 .main-admin { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
 
 /* TOPO */
+/* TOPO (Header) */
 .topbar-admin {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 30px 40px; background-color: var(--fundo-admin); position: sticky; top: 0; z-index: 5;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    gap: 20px; /* <--- Adicionado aqui */
+    padding: 20px 40px; 
+    background-color: var(--fundo-admin); 
+    position: sticky; 
+    top: 0; 
+    z-index: 5;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.titulo-setor-atual h1 { font-size: 2rem; font-weight: 900; color: var(--cafe-escuro); text-transform: capitalize; }
+/* NOVO: A caixa que segura e alinha tudo na direita */
+.topbar-acoes-direita {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Mantém uma distância perfeita e fixa entre os itens */
+}
+
+/* Mantém o botão Adicionar e Sair nos tamanhos originais */
+.titulo-setor-atual h1 { font-size: 2rem; font-weight: 900; color: var(--cafe-escuro); text-transform: capitalize; margin: 0; }
+
+/* Ajuste na barra de busca para que ela tenha um tamanho fixo e não esprema os botões */
+.busca-admin-container {
+    width: 300px; /* Largura fixa */
+}
 
 .busca-admin-container input {
-    width: 350px; padding: 12px 20px; border-radius: 30px; border: 1px solid rgba(0,0,0,0.1);
-    font-size: 1rem; outline: none; transition: 0.3s;
+    width: 100%; 
+    padding: 12px 20px; 
+    border-radius: 30px; 
+    border: 1px solid rgba(0,0,0,0.1);
+    font-size: 0.95rem; 
+    outline: none; 
+    transition: 0.3s;
 }
-.busca-admin-container input:focus { border-color: var(--dourado-suave); box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+
+.busca-admin-container input:focus { 
+    border-color: var(--dourado-suave); 
+    box-shadow: 0 0 10px rgba(212,175,55,0.2); 
+}
 
 .btn-adicionar-produto {
     background-color: var(--cafe-escuro); color: var(--branco); padding: 12px 25px;
@@ -220,11 +249,6 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 .btn-cancelar { flex: 1; background: transparent; border: 2px solid var(--cafe-escuro); color: var(--cafe-escuro); padding: 18px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.3s;}
 .btn-cancelar:hover { background: var(--vermelho-alerta); color: var(--branco); border-color: var(--vermelho-alerta); }
 
-.topbar-admin {
-    gap: 20px; /* Cria um espaço uniforme entre Título, Botão, Busca e Ações */
-    padding: 20px 40px;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
 
 /* Redesenhando o botão circular para um formato horizontal na Topbar */
 .topbar-admin .btn-voltar-loja {
@@ -398,4 +422,155 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     background: #c9302c; /* Vermelho mais escuro no hover */
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(217, 83, 79, 0.4);
+}
+
+/* ================== DESIGN DOS CARDS DE PEDIDO (COMANDA) ================== */
+.card-pedido-admin {
+    background: var(--branco);
+    border-radius: 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: 0.3s;
+    overflow: hidden; /* Mantém o cabeçalho colorido dentro dos cantos arredondados */
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.card-pedido-admin:hover { 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12); 
+    transform: translateY(-4px); 
+}
+
+/* Cabeçalho colorido baseado no Status */
+.pedido-header {
+    padding: 15px 20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pedido-header h3 { margin: 0; font-size: 1.2rem; font-weight: 900; }
+.pedido-header .data { font-size: 0.8rem; font-weight: 700; opacity: 0.9; }
+
+/* Corpo da comanda */
+.pedido-body { padding: 20px; flex-grow: 1; }
+
+.pedido-cliente { 
+    display: flex; align-items: center; gap: 10px; margin-bottom: 15px; 
+}
+.pedido-cliente .icone-user { 
+    background: var(--creme-fundo); width: 35px; height: 35px; 
+    border-radius: 50%; display: flex; align-items: center; 
+    justify-content: center; font-size: 1.1rem; 
+}
+.pedido-cliente h5 { margin: 0; font-size: 1rem; color: var(--cafe-escuro); font-weight: 800; text-transform: capitalize; }
+
+/* Lista de Produtos Formatada */
+.pedido-itens { 
+    list-style: none; padding: 0; margin: 0 0 15px 0; 
+    border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 15px; 
+}
+
+.pedido-itens li { 
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.95rem; margin-bottom: 10px; color: var(--cafe-claro); 
+}
+
+.pedido-itens li strong { 
+    color: var(--cafe-escuro); background: var(--creme-fundo); 
+    padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap;
+}
+
+.pedido-total { 
+    font-size: 1.3rem; font-weight: 900; color: var(--dourado-suave); 
+    text-align: right; margin-top: 15px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 15px;
+}
+
+/* Rodapé de Ações */
+.pedido-footer { 
+    padding: 15px 20px; background: var(--fundo-admin); 
+    border-top: 1px solid rgba(0,0,0,0.05); 
+}
+
+.pedido-footer label { 
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; 
+    font-weight: 800; color: var(--cafe-claro); display: block; margin-bottom: 8px; 
+}
+
+.pedido-footer select { 
+    width: 100%; padding: 10px 15px; border-radius: 8px; 
+    border: 1px solid rgba(0,0,0,0.1); font-weight: 800; 
+    color: var(--cafe-escuro); cursor: pointer; outline: none; 
+    background-color: var(--branco);
+}
+.pedido-footer select:focus { border-color: var(--dourado-suave); }
+
+/* Botão de excluir discreto no cabeçalho */
+.btn-remover-pedido { 
+    position: absolute; top: 12px; right: 12px; 
+    background: rgba(255,255,255,0.25); border: none; color: white; 
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer; 
+    transition: 0.3s; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.btn-remover-pedido:hover { background: rgba(0,0,0,0.3); }
+
+/* ========================================================================== */
+/* ================== DASHBOARD DE VENDAS =================================== */
+/* ========================================================================== */
+
+.dashboard-vendas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 0 40px 40px 40px;
+    width: 100%;
+}
+
+.metric-card {
+    background: var(--branco);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    border-left: 5px solid var(--dourado-suave);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.metric-card h4 { 
+    color: var(--cafe-claro); 
+    font-size: 0.9rem; 
+    text-transform: uppercase; 
+    margin-bottom: 10px; 
+}
+
+.metric-card .valor { 
+    font-size: 2rem; 
+    font-weight: 900; 
+    color: var(--cafe-escuro); 
+}
+
+.ranking-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.ranking-tabela td {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--fundo-admin);
+}
+
+.ranking-tabela .item-nome { 
+    font-weight: 700; 
+    color: var(--cafe-escuro); 
+}
+
+.ranking-tabela .item-qtd { 
+    text-align: right; 
+    color: var(--dourado-suave); 
+    font-weight: 800; 
 }

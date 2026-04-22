@@ -49,37 +49,117 @@ document.addEventListener("DOMContentLoaded", () => {
             atualizarPrecoFinal();
         });
 
-        btnMenos.addEventListener("click", () => {
-            if (quantidade > 1) {
-                quantidade--;
-                displayQuantidade.innerText = quantidade;
-                atualizarPrecoFinal();
-            }
-        });
-    }
-
-    function atualizarPrecoFinal() {
-        if (produtoAtual) {
-            const total = quantidade * produtoAtual.preco;
-            document.getElementById("preço-final").innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
-        }
-    }
-
-    // 5. Botão de Confirmar Agendamento (Valida Data e Hora)
-    const btnAgendar = document.getElementById("btn-agendar-final");
-    
-    if (btnAgendar) {
-        btnAgendar.addEventListener("click", () => {
-            const dataInput = document.getElementById("data-retirada").value;
-            const horaInput = document.getElementById("hora-retirada").value;
-
-            if (!dataInput || !horaInput) {
-                alert("⚠️ Por favor, preencha a DATA e o HORÁRIO para continuar.");
-                return;
-            }
-
-            // Exibe mensagem de sucesso
-            alert(`✅ Adicionado com Sucesso!\nData: ${dataInput.split('-').reverse().join('/')}\nHorário: ${horaInput}`);
-        });
+document.getElementById('ret-btn').addEventListener('click', () => {
+    if (quantidade > 1) {
+        quantidade--;
+        atualizarPrecoTotal();
     }
 });
+
+// 7. LÓGICA DO BOTÃO DE AGENDAR (CARRINHO)
+const btnAgendar    = document.getElementById("btn-agendar-final");
+const containerData = document.getElementById("data-picker-container");
+const inputData     = document.getElementById("data-retirada");
+
+// Configurar a data mínima para amanhã
+const amanha = new Date();
+amanha.setDate(amanha.getDate() + 1);
+if(inputData) inputData.min = amanha.toISOString().split("T")[0];
+
+let etapa = "escolher-data";
+
+btnAgendar.addEventListener("click", () => {
+    if (etapa === "escolher-data") {
+        containerData.style.display = "flex";
+        btnAgendar.innerText = "Confirmar Agendamento";
+        etapa = "confirmar";
+        return;
+    }
+
+    if (etapa === "confirmar") {
+        const nomeClienteLogado = localStorage.getItem("usuarioLogado");
+        
+        if (!nomeClienteLogado) {
+            if(typeof mostrarToast === 'function') mostrarToast("Faça login para agendar!");
+            else alert("Faça login para agendar!");
+            return;
+        }
+
+        if (!inputData.value) {
+            if(typeof mostrarToast === 'function') mostrarToast("Escolha uma data de retirada!");
+            else alert("Escolha uma data de retirada!");
+            return;
+        }
+
+        // Formata a data (dd/mm/aaaa)
+        const [ano, mes, dia] = inputData.value.split("-");
+        const dataFormatada = `${dia}/${mes}/${ano}`;
+
+        const precoString = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
+        const precoUnitario = extrairNumeroPreco(precoString);
+        const valorTotalProduto = precoUnitario * quantidade;
+
+        // 1. CRIAR O OBJETO DO PEDIDO
+        const novoPedido = {
+            id: Math.floor(1000 + Math.random() * 9000), // Gera um ID ex: #4052
+            cliente: nomeClienteLogado,
+            data: new Date().toLocaleDateString('pt-BR'),
+            dataRetirada: dataFormatada,
+            valor: valorTotalProduto,
+            status: "Pendente",
+            itens: [{
+                nome: produtoAtual.tituloproduto,
+                quantidade: quantidade,
+                preco: precoUnitario
+            }]
+        };
+
+        // 2. SALVAR NO BANCO DE PEDIDOS (localStorage)
+        const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+        pedidosAtuais.push(novoPedido);
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
+
+        if(typeof mostrarToast === 'function') mostrarToast(`✅ Pedido #${novoPedido.id} enviado com sucesso!`);
+
+        // Reseta o formulário
+        containerData.style.display = "none";
+        inputData.value = "";
+        btnAgendar.innerText = "Escolher Data";
+        etapa = "escolher-data";
+
+        // 3. REDIRECIONAR PARA O ADMIN COM PARÂMETRO NA URL
+        setTimeout(() => {
+            // O parâmetro '?setor=pedidos' avisa o admin-logic.js para abrir a aba correta
+            window.location.href = 'index-admin.html?setor=pedidos';
+        }, 1200);
+    }
+});
+
+// Inicializa tudo quando a página carregar
+document.addEventListener("DOMContentLoaded", carregarTela);
+
+// ENTRADA DE DADOS - PEDIDOS
+// Exemplo de função para finalizar o pedido
+function finalizarPedido(dadosCliente, itensSelecionados) {
+    // 1. Criar o objeto do pedido
+    const novoPedido = {
+        id: Math.floor(1000 + Math.random() * 9000), // Gera um ID aleatório
+        cliente: dadosCliente.nome,
+        data: new Date().toLocaleDateString('pt-BR'),
+        valor: calcularTotal(itensSelecionados),
+        status: "Pendente",
+        itens: itensSelecionados
+    };
+
+    // 2. Buscar pedidos existentes ou criar lista vazia
+    const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+
+    // 3. Adicionar o novo pedido à lista
+    pedidosAtuais.push(novoPedido);
+
+    // 4. Salvar de volta no localStorage
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
+
+    // 5. Redirecionar para o admin (como você solicitou)
+    window.location.href = 'index-admin.html';
+}
