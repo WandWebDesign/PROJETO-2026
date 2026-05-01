@@ -75,7 +75,7 @@ body {
     flex-shrink: 0;
 }
 
-.marca h1 {
+.marca a {
     font-family: 'Amatic SC', cursive;
     font-size: 2.5rem;
     color: var(--cafe-escuro);
