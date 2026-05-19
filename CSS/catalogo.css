@@ -95,6 +95,47 @@
 }
 
 /* =======================================================
+   FILTROS DO CATÁLOGO
+======================================================= */
+
+.filtros-catalogo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 20px auto 35px auto;
+}
+
+.btn-filtro {
+    background: var(--branco);
+    border: 2px solid var(--cafe-claro);
+    color: var(--cafe-escuro);
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+}
+
+.btn-filtro:hover {
+    background: var(--cafe-escuro);
+    color: var(--branco);
+    border-color: var(--cafe-escuro);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(74, 59, 50, 0.15);
+}
+
+.btn-filtro.ativo {
+    background: var(--cafe-escuro);
+    color: var(--branco);
+    border-color: var(--cafe-escuro);
+}
+
+/* =======================================================
    GRADE DE PRODUTOS E CARDS
 ======================================================= */
 #container-produtos {
@@ -200,15 +241,34 @@
     transform: translateY(-2px);
 }
 
+/* Card apenas visualizável (sem link) */
+.card-produto.card-visualizavel {
+    cursor: default;
+    opacity: 0.85;
+}
+
+/* Botão de indisponível para retirada */
+.btn-indisponivel {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #e0e0e0;
+    color: #888;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: not-allowed;
+    text-align: center;
+}
+
 /* =======================================================
-   DARK MODE (Ajustes para o Catálogo)
+   DARK MODE
 ======================================================= */
 body.dark-mode .setor-cabecalho {
     color: #E8E0D5;
 }
 
 body.dark-mode #titulo-setor {
-    color: #D4AF37; /* Dourado no escuro */
+    color: #D4AF37;
 }
 
 body.dark-mode .btn-voltar {
@@ -248,25 +308,33 @@ body.dark-mode .btn-agendar:hover {
     color: #1A110D;
 }
 
+body.dark-mode .btn-filtro {
+    background: #2A1C15;
+    color: #E8E0D5;
+    border-color: rgba(255,255,255,0.08);
+}
+
+body.dark-mode .btn-filtro:hover,
+body.dark-mode .btn-filtro.ativo {
+    background: #D4AF37;
+    color: #1A110D;
+    border-color: #D4AF37;
+}
+
 /* =======================================================
    RESPONSIVIDADE
 ======================================================= */
-/* =======================================================
-   RESPONSIVIDADE REFINADA - PÁGINA DE CATÁLOGO
-======================================================= */
 @media (max-width: 768px) {
-    /* Ajuste do espaçamento principal */
     .main-catalogo {
         padding: 1.5rem 1rem;
     }
 
-    /* Cabeçalho do Setor (Título e Botão Voltar) */
     .setor-cabecalho {
         margin: 0 auto 25px auto;
     }
 
     .setor-linha-titulo {
-        flex-direction: column; /* Coloca título sobre o botão */
+        flex-direction: column;
         gap: 15px;
         text-align: center;
         border-bottom: none;
@@ -274,17 +342,16 @@ body.dark-mode .btn-agendar:hover {
     }
 
     #titulo-setor {
-        font-size: 1.8rem; /* Título mais discreto */
+        font-size: 1.8rem;
         width: 100%;
     }
 
     .btn-voltar {
-        width: 100%; /* Botão ocupa a largura toda para facilitar o clique */
+        width: 100%;
         padding: 12px;
         font-size: 0.85rem;
     }
 
-    /* Barra de Busca */
     .setor-busca {
         margin-top: 10px;
     }
@@ -294,36 +361,50 @@ body.dark-mode .btn-agendar:hover {
         font-size: 1rem;
     }
 
-    /* Grade de Produtos - A Mágica das 2 Colunas */
+    .filtros-catalogo {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        gap: 8px;
+    }
+
+    .btn-filtro {
+        white-space: nowrap;
+        font-size: 0.8rem;
+        padding: 9px 14px;
+        flex-shrink: 0;
+    }
+
     #container-produtos {
-        /* Força exatamente 2 colunas lado a lado */
         grid-template-columns: repeat(2, 1fr); 
-        gap: 12px; /* Espaço uniforme entre cards */
+        gap: 12px;
         padding: 5px 0;
     }
 
-    /* Estilo dos Cards no Mobile */
     .card-container {
         padding: 1rem;
         border-radius: 12px;
     }
 
     .card-produto img {
-        height: 110px; /* Imagem menor para dar foco ao preço e nome */
+        height: 110px;
         margin-bottom: 0.8rem;
     }
 
     .card-produto h3 {
-        font-size: 0.95rem; /* Texto menor e mais legível */
-        min-height: 2.4rem; /* Garante que os botões fiquem alinhados */
+        font-size: 0.95rem;
+        min-height: 2.4rem;
         display: -webkit-box;
-        -webkit-line-clamp: 2; /* Corta o texto em 2 linhas se for muito longo */
+        display: box;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    /* Preços e Botões */
-    .preco-normal, .preco-oferta {
+    .preco-normal,
+    .preco-oferta {
         font-size: 1.2rem;
     }
 

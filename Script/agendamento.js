@@ -25,22 +25,31 @@ function conectarBanco() {
 // 3. Procurar o Produto no IndexedDB
 async function buscarProduto(id) {
     if (!id) return null;
+    
     try {
         const db = await conectarBanco();
+        
+        // Procura o ID em todos os setores do banco
         for (let setor of SETORES_DO_BANCO) {
-            const produto = await new Promise((resolve) => {
-                if (!db.objectStoreNames.contains(setor)) return resolve(null);
-                const tx = db.transaction(setor, "readonly");
-                const store = tx.objectStore(setor);
-                const req = store.get(id);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
+            if (!db.objectStoreNames.contains(setor)) continue;
+            
+            const tx = db.transaction([setor], "readonly");
+            const store = tx.objectStore(setor);
+            
+            // Busca diretamente pela Chave
+            const produtoEncontrado = await new Promise((resolve) => {
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
             });
-            if (produto) return produto; 
+
+            if (produtoEncontrado) {
+                return produtoEncontrado; // Se achou, retorna o produto e para de procurar!
+            }
         }
-        return null; 
-    } catch (erro) {
-        console.error("Erro na busca:", erro);
+        return null;
+    } catch (error) {
+        console.error("Erro ao buscar no IndexedDB:", error);
         return null;
     }
 }
@@ -52,7 +61,7 @@ function extrairNumeroPreco(textoPreco) {
     return parseFloat(valor);
 }
 
-// 5. RENDERIZAR A TELA (Mágica das Imagens)
+// 5. RENDERIZAR A TELA (Mágica das Imagens Corrigida)
 async function carregarTela() {
     produtoAtual = await buscarProduto(idProduto);
 
@@ -67,26 +76,33 @@ async function carregarTela() {
     
     atualizarPrecoTotal();
 
-    // --- Lógica da Galeria de Imagens ---
+    // --- Lógica da Galeria de Imagens BLINDADA ---
     const imgPrincipal = document.getElementById('produtoimagem');
     const containerMiniaturas = document.getElementById('container-miniaturas');
     
-    let listaImagens = [];
-    if (produtoAtual.imagens && produtoAtual.imagens.length > 0) {
-        listaImagens = produtoAtual.imagens; // Novo formato (4 a 6 fotos)
+    let listaImagensBrutas = [];
+    
+    // Pega as imagens independente do formato
+    if (produtoAtual.imagens && Array.isArray(produtoAtual.imagens) && produtoAtual.imagens.length > 0) {
+        listaImagensBrutas = produtoAtual.imagens; 
     } else if (produtoAtual.imagem) {
-        // Formato antigo fallback
-        let imgOld = produtoAtual.imagem;
-        if(imgOld.startsWith('../../')) imgOld = './' + imgOld.substring(6);
-        else if(imgOld.startsWith('./')) imgOld = '.' + imgOld; 
-        listaImagens = [imgOld];
+        listaImagensBrutas = [produtoAtual.imagem];
     }
 
-    if (listaImagens.length > 0) {
-        imgPrincipal.src = listaImagens[0];
+    // Aplica a correção de rota em TODAS as imagens do array
+    let listaImagensCorrigidas = listaImagensBrutas.map(imgTemp => {
+        if (imgTemp && imgTemp.startsWith('../../')) {
+            return './' + imgTemp.substring(6); // Remove o ../../ e troca por ./
+        }
+        return imgTemp; // Se for Base64 ou já estiver certo, devolve intacto
+    });
+
+    if (listaImagensCorrigidas.length > 0) {
+        if (imgPrincipal) imgPrincipal.src = listaImagensCorrigidas[0];
+        
         if(containerMiniaturas) {
             containerMiniaturas.innerHTML = '';
-            listaImagens.forEach((fotoSrc) => {
+            listaImagensCorrigidas.forEach((fotoSrc) => {
                 const imgMini = document.createElement('img');
                 imgMini.src = fotoSrc;
                 imgMini.alt = "Miniatura do produto";
@@ -104,7 +120,7 @@ async function carregarTela() {
                 imgMini.onclick = function() {
                     Array.from(containerMiniaturas.children).forEach(m => m.style.borderColor = 'transparent');
                     this.style.borderColor = 'var(--dourado-suave)';
-                    imgPrincipal.src = this.src;
+                    if (imgPrincipal) imgPrincipal.src = this.src;
                 };
 
                 containerMiniaturas.appendChild(imgMini);
@@ -115,7 +131,8 @@ async function carregarTela() {
             }
         }
     } else {
-        imgPrincipal.src = "./Imagens/Logo.png";
+        // Fallback caso não tenha nenhuma imagem
+        if (imgPrincipal) imgPrincipal.src = "./Imagens/Logo.png";
     }
 }
 

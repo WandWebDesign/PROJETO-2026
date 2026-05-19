@@ -1,46 +1,47 @@
-/* ================================================= */
-/* 1. DADOS INICIAIS (SEED) E CONFIGURAÇÃO           */
-/* ================================================= */
-
+// =======================================================
+// 1. CAPTURA DE PARÂMETROS DA URL
+// =======================================================
 const urlParams = new URLSearchParams(window.location.search);
-const setorAtual = urlParams.get("setor");   
-const filtroAtual = urlParams.get("filtro"); 
+// Lemos tanto ?setor= quanto ?filtro= para dar suporte a todos os seus links
+const setorDaUrl = urlParams.get("setor");
+const filtroDaUrl = urlParams.get("filtro");
 
-const SETORES_DO_BANCO =["padaria", "acougue", "hortifruti", "mercado"];
-
-// Lista de produtos com as tags corretas e LOGICA DE PREÇOS ATUALIZADA (Unidade, Fatias e 100g)
 const produtosIniciais = {
-    // --- PADARIA ---
+    //Padaria//
     pãofrances: {
         tituloproduto: "Pão Francês",
-        imagem: "./Imagens/PãoFrances.webp", 
+        imagem: "./Imagens/PãoFrances.webp",
         preco: "0,80 / Un",
         precoOferta: "0,70 / Un",
-        setor: "padaria", 
-        tags: ["oferta", "retiravel"],
+        setor: "padaria",
+        categoria: "padaria",
+        tags: ["oferta", "retiravel"]
     },
     pãodequeijo: {
         tituloproduto: "Pão de Queijo",
-        imagem: "./Imagens/Pão de Queijo .webp", 
+        imagem: "./Imagens/Pão de Queijo .webp",
         preco: "3,00 / Un",
         precoOferta: null,
-        setor: "padaria", 
-        tags: ["retiravel"] 
+        setor: "padaria",
+        categoria: "padaria",
+        tags: ["retiravel"]
     },
     coxinhadefrango: {
         tituloproduto: "Coxinha de Frango",
         imagem: "./Imagens/Coxinha de Frango .webp",
         preco: "8,50 / Un",
         precoOferta: null,
-        setor: "padaria", 
-        tags: ["retiravel"] 
+        setor: "padaria",
+        categoria: "padaria",
+        tags: ["retiravel"]
     },
     pãodeleite: {
         tituloproduto: "Pão de Leite",
-        imagem: "./Imagens/Pão de Leite .webp", 
+        imagem: "./Imagens/Pão de Leite .webp",
         preco: "1,50 / Un",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: ["retiravel"]
     },
     esfirradecarne: {
@@ -48,7 +49,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Esfirra de Carne.webp",
         preco: "8,50 / Un",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: ["retiravel"]
     },
     bolodefuba: {
@@ -56,15 +58,17 @@ const produtosIniciais = {
         imagem: "./Imagens/Bolo de fubá.webp",
         preco: "7,50 / Fatia",
         precoOferta: null,
-        setor: "padaria", 
-        tags: ["retiravel"] 
+        setor: "padaria",
+        categoria: "padaria",
+        tags: ["retiravel"]
     },
     bolodemilho: {
         tituloproduto: "Bolo de Milho",
-        imagem: "./Imagens/Bolo de Milho.webp", 
+        imagem: "./Imagens/Bolo de Milho.webp",
         preco: "7,50 / Fatia",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: ["retiravel"]
     },
     mistoquente: {
@@ -72,15 +76,17 @@ const produtosIniciais = {
         imagem: "./Imagens/MistoQuente.jpg",
         preco: "7,00 / Un",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: null
     },
-     sonhodecreme: {
+    sonhodecreme: {
         tituloproduto: "Sonho de Creme",
         imagem: "./Imagens/Sonho de Creme.webp",
         preco: "7,50 / Un",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: null
     },
     tortadefrango: {
@@ -88,41 +94,45 @@ const produtosIniciais = {
         imagem: "./Imagens/TortaDefrango.webp",
         preco: "8,90 / Fatia",
         precoOferta: null,
-        setor: "padaria", 
+        setor: "padaria",
+        categoria: "padaria",
         tags: null
     },
-
-    // --- AÇOUGUE / FRIOS ---
+    //Açougue/Frios//
     mussarela: {
         tituloproduto: "Mussarela",
         imagem: "./Imagens/Mussarela.webp",
         preco: "5,99 / 100g",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: ["retiravel"]
     },
-    mortandela: { 
+    mortandela: {
         tituloproduto: "Mortadela",
-        imagem: "./Imagens/Mortandela.webp", 
-        preco: "4,49 / 100g", 
+        imagem: "./Imagens/Mortandela.webp",
+        preco: "4,49 / 100g",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: ["retiravel"]
     },
     presunto: {
         tituloproduto: "Presunto Fatiado",
-        imagem: "./Imagens/Presunto.webp", 
+        imagem: "./Imagens/Presunto.webp",
         preco: "5,49 / 100g",
         precoOferta: null,
-        setor: "acougue", 
-        tags: ["retiravel"] 
+        setor: "acougue",
+        categoria: "frios",
+        tags: ["retiravel"]
     },
     coxasobrecoxa: {
         tituloproduto: "Coxa e Sobrecoxa de Frango",
         imagem: "./Imagens/Coxa de Frango.webp",
         preco: "14,99 / Kg",
         precoOferta: "10,99 / Kg",
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: ["oferta"]
     },
     linguiçatoscana: {
@@ -130,7 +140,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Linguiça Toscada Sadia.webp",
         preco: "29,90 / Kg",
         precoOferta: "23,90 / Kg",
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: ["oferta"]
     },
     acembovino: {
@@ -138,7 +149,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Acém Bovino.webp",
         preco: "32,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
     patinhobovino: {
@@ -146,7 +158,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Patinho Bife.webp",
         preco: "42,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
     cotrafile: {
@@ -154,7 +167,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Contrafile.webp",
         preco: "54,90 / Kg",
         precoOferta: "49,90",
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: ["oferta"]
     },
     bistecasuina: {
@@ -162,7 +176,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Bisteca Suina.webp",
         preco: "24,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
     baconempedaço: {
@@ -170,7 +185,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Bacon.webp",
         preco: "44,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
     salsicha: {
@@ -178,7 +194,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Salsicha perdigão.webp",
         preco: "17,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
     lombosuino: {
@@ -186,17 +203,18 @@ const produtosIniciais = {
         imagem: "./Imagens/Lombo Suino.jpg",
         preco: "29,90 / Kg",
         precoOferta: null,
-        setor: "acougue", 
+        setor: "acougue",
+        categoria: "frios",
         tags: null
     },
-
-    // --- HORTIFRUTI ---
+    //Hortifruti//
     batatalavada: {
         tituloproduto: "Batata Lavada",
         imagem: "./Imagens/Batata Lavada.webp",
         preco: "3,99 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     cenoura: {
@@ -204,7 +222,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Cenoura.webp",
         preco: "6,99 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     cebola: {
@@ -212,7 +231,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Cebola.webp",
         preco: "7,99 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     tomatedébora: {
@@ -220,7 +240,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Tomate Débora.webp",
         preco: "8,99 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     alfacecrespa: {
@@ -228,7 +249,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Alface Crespa.webp",
         preco: "3,99 / Un",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     alho: {
@@ -236,7 +258,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Alho.webp",
         preco: "3,50 / 100g",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     bananananica: {
@@ -244,7 +267,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Banana Nanica.webp",
         preco: "5,49 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     maçagala: {
@@ -252,15 +276,17 @@ const produtosIniciais = {
         imagem: "./Imagens/Maça Gala.webp",
         preco: "11,90 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
-     laranjapera: {
+    laranjapera: {
         tituloproduto: "Laranja Pera",
         imagem: "./Imagens/Laranja.webp",
         preco: "4,99 / Kg",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
     ovosbrancos: {
@@ -268,17 +294,18 @@ const produtosIniciais = {
         imagem: "./Imagens/Ovos Brancos.webp",
         preco: "12,99 / Dúzia",
         precoOferta: null,
-        setor: "hortifruti", 
+        setor: "hortifruti",
+        categoria: "hortifruti",
         tags: null
     },
-
-    // --- MERCADO ---
+    //Mercado//
     arrozagulha: {
         tituloproduto: "Arroz Agulhinha Tipo 1 Camil (5Kg)",
         imagem: "./Imagens/Arroz Camil.webp",
         preco: "24,90 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "mercearia",
         tags: null
     },
     feijaocarioca: {
@@ -286,7 +313,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Feijão Carioca.webp",
         preco: "9,99 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "mercearia",
         tags: null
     },
     açucarrefinado: {
@@ -294,7 +322,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Açucar Refinado.webp",
         preco: "5,49 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "mercearia",
         tags: null
     },
     cafeempotradicional: {
@@ -302,7 +331,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Café Tradicional jpg.jpg",
         preco: "18,90 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "bebidas",
         tags: null
     },
     leiteintegral: {
@@ -310,7 +340,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Leite Integral.webp",
         preco: "5,99 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "laticinios",
         tags: null
     },
     biscoitorecheado: {
@@ -318,7 +349,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Biscoito Recheado .webp",
         preco: "3,99 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "doces",
         tags: null
     },
     macaraoespaquete: {
@@ -326,15 +358,17 @@ const produtosIniciais = {
         imagem: "./Imagens/Macarrão.webp",
         preco: "4,79 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "mercearia",
         tags: null
     },
-     detergenteliquido: {
+    detergeliquido: {
         tituloproduto: "Detergente Líquido Ypê (500ml)",
         imagem: "./Imagens/Detergente.webp",
         preco: "2,99 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "limpeza",
         tags: null
     },
     raçaoparacaes: {
@@ -342,7 +376,8 @@ const produtosIniciais = {
         imagem: "./Imagens/Ração para cachorro.jpeg",
         preco: "21,90 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "pets",
         tags: null
     },
     aguasanitaria: {
@@ -350,211 +385,174 @@ const produtosIniciais = {
         imagem: "./Imagens/Candida.webp",
         preco: "4,79 / Un",
         precoOferta: null,
-        setor: "mercado", 
+        setor: "mercado",
+        categoria: "limpeza",
         tags: null
     }
 };
 
-/* ================================================= */
-/* 2. LÓGICA DO INDEXED DB                           */
-/* ================================================= */
-
-// AQUI ESTÁ A MÁGICA: Mudei o nome para V6 para ele forçar a atualização!
-const DB_NAME = "PadariaDB_V6";
-const DB_VERSION = 3; 
-
-function conectarBanco() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onerror = (event) => {
-            console.error("Erro ao abrir o banco:", event);
-            reject("Erro no DB");
-        };
-
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            
-            SETORES_DO_BANCO.forEach(nomeSetor => {
-                if (!db.objectStoreNames.contains(nomeSetor)) {
-                    db.createObjectStore(nomeSetor, { keyPath: "id" });
-                }
-            });
-
-            const transaction = event.target.transaction;
-
-            Object.entries(produtosIniciais).forEach(([chave, produto]) => {
-                const setorDoProduto = produto.setor;
-
-                if (SETORES_DO_BANCO.includes(setorDoProduto)) {
-                    const store = transaction.objectStore(setorDoProduto);
-                    store.add({ id: chave, ...produto });
-                }
-            });
-        };
-
-        request.onsuccess = (event) => {
-            resolve(event.target.result);
-        };
-    });
-}
-
-function buscarTodosProdutos(db) {
-    const promessasDeBusca = SETORES_DO_BANCO.map(setor => {
-        return new Promise((resolve) => {
-            const transaction = db.transaction([setor], "readonly");
-            const store = transaction.objectStore(setor);
-            const request = store.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => resolve([]); 
-        });
-    });
-
-    return Promise.all(promessasDeBusca).then(resultadosPorSetor => {
-        const todosProdutosJuntos = resultadosPorSetor.flat();
-
-        return todosProdutosJuntos.map(item => {
-            const { id, ...resto } = item;
-            return [id, resto];
-        });
-    });
-}
-
-/* ================================================= */
-/* 3. ELEMENTOS E FUNÇÕES DE TELA                    */
-/* ================================================= */
-
 const containerProdutos = document.getElementById("container-produtos");
 const tituloSetor = document.getElementById("titulo-setor");
 const barraBusca = document.getElementById("barra-busca");
+const botoesFiltro = document.querySelectorAll(".btn-filtro");
 
-let produtosFiltradosInicialmente =[];
+let categoriaAtual = "todos";
+const listaCompleta = Object.entries(produtosIniciais);
 
-function capitalizar(str) {
-    if (!str) return "";
-    return str.charAt(0).toUpperCase() + str.slice(1);
+function removerAcentos(texto) {
+    if (!texto) return "";
+    return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-function removerAcentos(str) {
-    if (!str) return "";
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// Map de Tradução dos nomes das Categorias/Filtros
+function nomeCategoria(categoria) {
+    const nomes = {
+        todos: "CATÁLOGO COMPLETO",
+        padaria: "PADARIA",
+        acougue: "AÇOUGUE",
+        hortifruti: "HORTIFRUTI",
+        mercado: "MERCADO",
+        frios: "FRIOS",
+        oferta: "🔥EM OFERTA",
+        retiravel: "🛒 PEÇA E RETIRE", // Suporte visual para o botão Peça e Retire
+        limpeza: "LIMPEZA",
+        mercearia: "MERCEARIA",
+        laticinios: "LATICÍNIOS",
+        bebidas: "BEBIDAS",
+    };
+    return nomes[categoria] || categoria.toUpperCase();
 }
 
-// === FUNÇÃO TOTALMENTE CORRIGIDA ===
-function renderizarProdutos(listaDeProdutos) {
-    containerProdutos.innerHTML = ""; 
-
-    if (listaDeProdutos.length === 0) {
-        if (barraBusca && barraBusca.value !== "") {
-            containerProdutos.innerHTML = "<p style='font-size:1.2rem; margin-top:20px;'>Nenhum produto encontrado com esse nome.</p>";
-        } else {
-            containerProdutos.innerHTML = "<p style='font-size:1.2rem; margin-top:20px;'>Nenhum produto encontrado nesta categoria.</p>";
-        }
+// Renderizador do HTML dos cards
+// Renderizador do HTML dos cards
+function renderizarProdutos(lista) {
+    containerProdutos.innerHTML = "";
+    
+    if (lista.length === 0) {
+        containerProdutos.innerHTML = `<p style="padding: 20px; color: #666; font-weight: bold;">Nenhum produto encontrado.</p>`;
         return;
     }
 
-    listaDeProdutos.forEach(([id, produto]) => {
+    lista.forEach(([id, produto]) => {
+        // Lógica de Preço
         let precoHTML = "";
-        
         if (produto.precoOferta) {
             precoHTML = `
                 <div class="card-precos">
-                    <span class="preco-oferta">R$ ${produto.precoOferta}</span>
-                    <span class="preco-antigo">R$ ${produto.preco}</span>
+                    <p class="preco-normal">R$ ${produto.precoOferta}</p>
+                    <p class="preco-antigo">R$ ${produto.preco}</p>
                 </div>`;
-        } else if (produto.preco) {
-            precoHTML = `
-                <div class="card-precos" style="margin-top: auto;">
-                    <span class="preco-normal">R$ ${produto.preco}</span>
-                </div>`;
+        } else {
+            precoHTML = `<div class="card-precos"><p class="preco-normal">R$ ${produto.preco}</p></div>`;
         }
-        
-        let conteudoDoCard = "";
-        let botaoHTML = ""; 
 
-        // Se o produto FOR agendável: A imagem inteira clica e tem o botão
-        if (produto.tags && produto.tags.includes("retiravel")) {
-            conteudoDoCard = `
+        // Lógica de Imagem
+        let imagemSrc = produto.imagem || "./Imagens/Logo.png";
+        if (imagemSrc.startsWith('../../')) {
+            imagemSrc = './' + imagemSrc.substring(6);
+        }
+
+        // ✅ CORREÇÃO: Decide o wrapper e o botão com base na tag "retiravel"
+        const ehRetiravel = produto.tags && produto.tags.includes("retiravel");
+
+        let cardInternoHTML = "";
+        let botaoHTML = "";
+
+        if (ehRetiravel) {
+            // Produto clicável: card leva para o agendamento
+            cardInternoHTML = `
                 <a href="pagina-agendamento.html?id=${id}" class="card-produto">
-                    <img src="${produto.imagem}" alt="${produto.tituloproduto}">
+                    <img src="${imagemSrc}" alt="${produto.tituloproduto}">
                     <h3>${produto.tituloproduto}</h3>
-                    ${precoHTML} 
-                </a>
-            `;
-            botaoHTML = `<a href="pagina-agendamento.html?id=${id}" class="btn-agendar">Agendar</a>`;
-        } 
-        // Se o produto NÃO FOR agendável: É apenas uma Div estática sem link!
-        else {
-            conteudoDoCard = `
-                <div class="card-produto" style="cursor: default;">
-                    <img src="${produto.imagem}" alt="${produto.tituloproduto}">
+                </a>`;
+            botaoHTML = `<a href="pagina-agendamento.html?id=${id}" class="btn-agendar">Adicionar</a>`;
+        } else {
+            // Produto apenas visualizável: sem link, com visual de "indisponível para retirada"
+            cardInternoHTML = `
+                <div class="card-produto card-visualizavel">
+                    <img src="${imagemSrc}" alt="${produto.tituloproduto}">
                     <h3>${produto.tituloproduto}</h3>
-                    ${precoHTML} 
-                </div>
-            `;
+                </div>`;
+            botaoHTML = `<span class="btn-indisponivel">Disponível na loja</span>`;
         }
 
-        // Constrói o cartão misturando o conteúdo apropriado
-        const cardCompletoHTML = `
+        containerProdutos.innerHTML += `
             <div class="card-container">
-                ${conteudoDoCard}
-                ${botaoHTML} 
+                ${cardInternoHTML}
+                ${precoHTML}
+                ${botaoHTML}
             </div>
         `;
-        containerProdutos.innerHTML += cardCompletoHTML;
     });
 }
+// LÓGICA DO FILTRO COMPACTA E INTELIGENTE
+function aplicarFiltros() {
+    const termoBusca = removerAcentos(barraBusca.value.toLowerCase().trim());
 
-/* ================================================= */
-/* 4. EXECUÇÃO PRINCIPAL                             */
-/* ================================================= */
+    const produtosFiltrados = listaCompleta.filter(([id, produto]) => {
+        const nomeProduto = removerAcentos(produto.tituloproduto.toLowerCase());
+        const passouNaBusca = nomeProduto.includes(termoBusca);
 
-async function iniciarApp() {
-    try {
-        const db = await conectarBanco();
-        const listaCompleta = await buscarTodosProdutos(db);
-
-        if (setorAtual || filtroAtual) {
-            let tituloPagina = "";
-            if (setorAtual) tituloPagina = capitalizar(setorAtual);
-            if (filtroAtual) {
-                const filtroCapitalizado = capitalizar(filtroAtual);
-                tituloPagina = tituloPagina ? `${tituloPagina} (${filtroCapitalizado})` : filtroCapitalizado;
-            }
-            tituloSetor.innerText = tituloPagina;
-
-            produtosFiltradosInicialmente = listaCompleta.filter(([id, produto]) => {
-                let setorMatch = true;
-                if (setorAtual) setorMatch = (produto.setor === setorAtual);
-
-                let filtroMatch = true;
-                if (filtroAtual) filtroMatch = (produto.tags && produto.tags.includes(filtroAtual));
-
-                return setorMatch && filtroMatch;
-            });
-
-            renderizarProdutos(produtosFiltradosInicialmente);
-
-            if (barraBusca) {
-                barraBusca.addEventListener("input", () => {
-                    const termoBusca = removerAcentos(barraBusca.value.toLowerCase());
-                    const produtosFiltradosPelaBusca = produtosFiltradosInicialmente.filter(([id, produto]) => {
-                        const tituloNormalizado = removerAcentos(produto.tituloproduto.toLowerCase());
-                        return tituloNormalizado.includes(termoBusca);
-                    });
-                    renderizarProdutos(produtosFiltradosPelaBusca);
-                });
-            }
-
+        let passouNaCategoria = false;
+        
+        if (categoriaAtual === "todos") {
+            passouNaCategoria = true;
+        } else if (categoriaAtual === "oferta") {
+            // Filtra pela TAG 'oferta'
+            passouNaCategoria = produto.tags && produto.tags.includes("oferta");
+        } else if (categoriaAtual === "retiravel") {
+            // Filtra pela TAG 'retiravel' (PEÇA E RETIRE)
+            passouNaCategoria = produto.tags && produto.tags.includes("retiravel");
         } else {
-            tituloSetor.innerText = "Nenhum filtro aplicado";
-            containerProdutos.innerHTML = "<p>Por favor, selecione um setor ou filtro no menu.</p>";
-            if (barraBusca) barraBusca.style.display = 'none';
+            // Filtra por Setor ou Categoria estrutural normal
+            passouNaCategoria = (produto.setor === categoriaAtual || produto.categoria === categoriaAtual);
         }
+        
 
-    } catch (erro) {
-        console.error("Erro fatal na aplicação:", erro);
-    }
+        return passouNaBusca && passouNaCategoria;
+    });
+
+    tituloSetor.innerText = nomeCategoria(categoriaAtual);
+    renderizarProdutos(produtosFiltrados);
 }
-iniciarApp();
+
+function selecionarCategoria(categoria) {
+    categoriaAtual = categoria;
+    botoesFiltro.forEach(botao => {
+        botao.classList.toggle("ativo", botao.dataset.categoria === categoriaAtual);
+    });
+    aplicarFiltros();
+}
+
+// Eventos dos botões laterais/filtros da própria página de Catálogo
+botoesFiltro.forEach(botao => {
+    botao.addEventListener("click", () => {
+        selecionarCategoria(botao.dataset.categoria);
+    });
+});
+
+if(barraBusca) {
+    barraBusca.addEventListener("input", aplicarFiltros);
+}
+
+// =======================================================
+// INTERCEPTADOR DE INICIALIZAÇÃO DA PÁGINA (A MÁGICA AQUI)
+// =======================================================
+document.addEventListener("DOMContentLoaded", () => {
+    // Verifica se veio um parâmetro pela URL (?setor=... ou ?filtro=...)
+    const filtroParametro = setorDaUrl || filtroDaUrl;
+
+    if (filtroParametro) {
+        categoriaAtual = filtroParametro.toLowerCase();
+    } else {
+        categoriaAtual = "todos";
+    }
+
+    // Ativa a classe visual no botão correspondente caso ele exista na barra lateral
+    botoesFiltro.forEach(botao => {
+        botao.classList.toggle("ativo", botao.dataset.categoria === categoriaAtual);
+    });
+
+    // Roda os filtros imediatamente para exibir os produtos corretos na tela
+    aplicarFiltros();
+});
