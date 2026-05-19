@@ -252,7 +252,7 @@ async function pesquisarProdutos() {
         return;
     }
 
-    // 3. Conecta ao Banco de Dados (PadariaDB_V5)
+    // 3. Conecta ao Banco de Dados (PadariaDB_V6)
     try {
         const DB_NAME = "PadariaDB_V6";
         const db = await new Promise((resolve, reject) => {
@@ -261,7 +261,7 @@ async function pesquisarProdutos() {
             request.onerror = () => reject("Erro ao abrir banco de dados");
         });
 
-        // 4. Vasculha todos os setores buscando os itens
+        // 4. Vasculha todos os setores usando CURSOR para extrair o ID com segurança
         const setores = ["padaria", "acougue", "hortifruti", "mercado"];
         let todosOsProdutos = [];
 
@@ -269,17 +269,32 @@ async function pesquisarProdutos() {
             if (db.objectStoreNames.contains(setor)) {
                 const transaction = db.transaction(setor, 'readonly');
                 const store = transaction.objectStore(setor);
-                const itens = await new Promise(res => {
-                    const req = store.getAll();
-                    req.onsuccess = () => res(req.result);
+                
+                // Mudança Crítica: Usando Cursor para amarrar a Chave (ID) ao objeto do produto
+                await new Promise((resolveItem) => {
+                    const cursorReq = store.openCursor();
+                    cursorReq.onsuccess = (e) => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            const produtoComId = cursor.value;
+                            // Forçamos a ID real do registro a entrar na propriedade 'id'
+                            produtoComId.id = cursor.key; 
+                            
+                            todosOsProdutos.push(produtoComId);
+                            cursor.continue();
+                        } else {
+                            resolveItem();
+                        }
+                    };
+                    cursorReq.onerror = () => resolveItem();
                 });
-                todosOsProdutos = todosOsProdutos.concat(itens);
             }
         }
 
         // 5. Filtra os produtos com base no que foi digitado
         const termoLimpo = removerAcentosBusca(termo);
         const resultados = todosOsProdutos.filter(prod => {
+            if (!prod.tituloproduto) return false;
             const tituloLimpo = removerAcentosBusca(prod.tituloproduto.toLowerCase());
             return tituloLimpo.includes(termoLimpo);
         });
@@ -291,6 +306,13 @@ async function pesquisarProdutos() {
                 const div = document.createElement('div');
                 div.className = 'item-busca';
                 
+                // Lógica de imagens à prova de falhas (suporta array novo do admin ou fallback antigo)
+                let imagemSrc = "./Imagens/Logo.png";
+                let imgTemp = (prod.imagens && prod.imagens.length > 0) ? prod.imagens[0] : prod.imagem;
+                if (imgTemp) {
+                    imagemSrc = imgTemp.startsWith('../../') ? './' + imgTemp.substring(6) : imgTemp;
+                }
+
                 // Verifica se tem a tag "retiravel" no banco de dados
                 const podeAgendar = prod.tags && prod.tags.includes('retiravel');
                 const tagVisual = podeAgendar 
@@ -298,21 +320,21 @@ async function pesquisarProdutos() {
                     : '<span class="tag-loja">🛒 Apenas Loja Física</span>';
 
                 div.innerHTML = `
-                    <img src="${prod.imagem}" alt="${prod.tituloproduto}">
+                    <img src="${imagemSrc}" alt="${prod.tituloproduto}">
                     <div class="item-busca-info">
                         <h4>${prod.tituloproduto}</h4>
                         ${tagVisual}
                     </div>
                 `;
 
-                // 7. Evento de clique! O que acontece ao escolher o produto?
+                // 7. Evento de clique! (Agora prod.id existe e contém o valor exato)
                 div.onclick = () => {
                     if (podeAgendar) {
-                        // Voa direto para a página de agendamento do produto!
+                        // Redireciona perfeitamente sem o erro de 'undefined'
                         window.location.href = `pagina-agendamento.html?id=${prod.id}`;
                     } else {
-                        // Se não for agendável, envia para o catálogo geral
-                        window.location.href = `pagina-catalogo.html?busca=${termo}`;
+                        // Se não for agendável, envia para o catálogo geral com o termo buscado
+                        window.location.href = `pagina-catalogo.html?busca=${encodeURIComponent(termo)}`;
                     }
                 };
 
@@ -326,7 +348,7 @@ async function pesquisarProdutos() {
         }
 
     } catch (erro) {
-        console.log("Banco de dados ainda não inicializado ou erro na busca:", erro);
+        console.log("Erro na busca dinâmica do header:", erro);
     }
 }
 

@@ -382,19 +382,19 @@ function mostrarPedidosNoAdmin() {
     }
 
     pedidos.forEach(pedido => {
-        // Cores temáticas para o cabeçalho
+        // Cores temáticas para o cabeçalho (agora com Cancelado)
         const cores = {
             "Pendente": "#D9534F",    // Vermelho 
             "Em produção": "#F0AD4E", // Laranja/Dourado
-            "Finalizado": "#5CB85C"   // Verde
+            "Finalizado": "#5CB85C",  // Verde
+            "Cancelado": "#777777"    // Cinza
         };
         const corCabecalho = cores[pedido.status] || '#A89F98';
 
         // 1. Gera a lista de produtos formatada
         let listaProdutosHTML = '';
         pedido.itens.forEach(item => {
-            // Aqui usamos nossa nova função inteligente!
-            const qtdFormatada = formatarQuantidadeProduto(item.nome, item.quantidade);
+            const qtdFormatada = typeof formatarQuantidadeProduto === 'function' ? formatarQuantidadeProduto(item.nome, item.quantidade) : item.quantidade;
             
             const infoData = item.dataRetirada 
                 ? `<span style="font-size: 0.75rem; color: #5CB85C; display: block; font-weight: 800; margin-top: 3px;">📅 Agendado: ${item.dataRetirada}</span>` 
@@ -411,16 +411,32 @@ function mostrarPedidosNoAdmin() {
             `;
         });
 
-        // 2. Monta a nova "Comanda"
+        // 2. Lógica Visual de Cancelamento (Justificativa e Botão)
+        const justificativaHTML = pedido.justificativa 
+            ? `<div style="background: #FFF5F5; color: #C53030; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border: 1px solid #FEB2B2;">
+                <strong>🚫 Motivo:</strong> ${pedido.justificativa}
+               </div>`
+            : '';
+
+        const botaoCancelar = (pedido.status !== "Cancelado" && pedido.status !== "Finalizado")
+            ? `<button onclick="abrirModalCancelamentoAdmin('${pedido.id}')" style="background: #D9534F; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.2s;">
+                Cancelar Pedido
+               </button>`
+            : '';
+
+        // Determina se a comanda deve ficar "apagada" (opaca)
+        const comandaOpaca = (pedido.status === 'Finalizado' || pedido.status === 'Cancelado' || pedido.status === 'Concluído') ? 'opacity: 0.6;' : '';
+
+        // 3. Monta a nova "Comanda"
         const card = `
-            <div class="card-pedido-admin" style="${pedido.status === 'Concluído' ? 'opacity: 0.7;' : ''}">
+            <div class="card-pedido-admin" style="${comandaOpaca}">
                 
                 <div class="pedido-header" style="background-color: ${corCabecalho};">
                     <div>
                         <h3>#${pedido.id}</h3>
                         <span class="data">${pedido.dataPedido}</span>
                     </div>
-                    <button class="btn-remover-pedido" onclick="removerPedido(${pedido.id})" title="Apagar Pedido">✖</button>
+                    <button class="btn-remover-pedido" onclick="removerPedido('${pedido.id}')" title="Apagar Pedido do Painel">✖</button>
                 </div>
 
                 <div class="pedido-body">
@@ -436,15 +452,20 @@ function mostrarPedidosNoAdmin() {
                     <div class="pedido-total">
                         Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}
                     </div>
+                    
+                    ${justificativaHTML}
                 </div>
                 
                 <div class="pedido-footer">
                     <label>Status da Produção:</label>
-                    <select onchange="alterarStatusPedido(${pedido.id}, this.value)">
+                    <select onchange="alterarStatusPedido('${pedido.id}', this.value)" ${pedido.status === 'Cancelado' ? 'disabled' : ''}>
                         <option value="Pendente" ${pedido.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
                         <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
                         <option value="Finalizado" ${pedido.status === 'Finalizado' ? 'selected' : ''}>✅ Finalizado</option>
+                        ${pedido.status === 'Cancelado' ? `<option value="Cancelado" selected>🚫 Cancelado</option>` : ''}
                     </select>
+
+                    ${botaoCancelar}
                 </div>
             </div>
         `;
@@ -457,7 +478,7 @@ function mostrarPedidosNoAdmin() {
 function alterarStatusPedido(idPedido, novoStatus) {
     // A. Atualizar na lista do Admin
     let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    const indexAdmin = pedidosAdmin.findIndex(p => p.id === idPedido);
+    const indexAdmin = pedidosAdmin.findIndex(p => p.id == idPedido);
     
     if (indexAdmin !== -1) {
         pedidosAdmin[indexAdmin].status = novoStatus;
@@ -466,7 +487,7 @@ function alterarStatusPedido(idPedido, novoStatus) {
 
     // B. Atualizar no Histórico do Cliente (para ele ver na página dele)
     let historicoClientes = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
-    const indexCliente = historicoClientes.findIndex(p => p.id === idPedido);
+    const indexCliente = historicoClientes.findIndex(p => p.id == idPedido);
     
     if (indexCliente !== -1) {
         historicoClientes[indexCliente].status = novoStatus;
@@ -482,7 +503,7 @@ function removerPedido(id) {
     if(confirm("Tem certeza que deseja apagar este pedido do painel?")) {
         let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
         // Filtra para manter apenas os pedidos que NÃO tem o id selecionado
-        pedidos = pedidos.filter(p => p.id !== id);
+        pedidos = pedidos.filter(p => p.id != id);
         
         // Salva no banco e recarrega a tela
         localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
@@ -581,4 +602,111 @@ function mostrarVendasNoAdmin() {
             </div>
         </section>
     `;
+}
+
+/* =======================================================
+   REGRAS DE NEGÓCIO: CANCELAMENTO DO ADMIN COM JUSTIFICATIVA
+======================================================= */
+
+let idPedidoParaCancelarAdmin = null;
+
+/**
+ * Abre o modal de justificativa guardando o ID do pedido selecionado
+ */
+function abrirModalCancelamentoAdmin(idPedido) {
+    idPedidoParaCancelarAdmin = idPedido;
+    const modal = document.getElementById('modal-justificativa-admin');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Fecha o modal de justificativa
+ */
+function fecharModalJustificativa() {
+    const modal = document.getElementById('modal-justificativa-admin');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    idPedidoParaCancelarAdmin = null;
+}
+
+/**
+ * Confirma o cancelamento, injeta o motivo e atualiza os LocalStorages
+ */
+/* =======================================================
+   REGRAS DE NEGÓCIO: CANCELAMENTO DO ADMIN COM JUSTIFICATIVA
+======================================================= */
+function confirmarCancelamentoAdmin() {
+    if (!idPedidoParaCancelarAdmin) return;
+    
+    // Pega o motivo pré-estabelecido selecionado no dropdown
+    const motivoSelecionado = document.getElementById('select-justificativa-admin').value;
+    
+    // 1. ATUALIZA NA BASE DO ADMIN (pedidosPadaria)
+    let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    
+    // CORREÇÃO AQUI: Usando '==' ao invés de '===' para ignorar a diferença entre Número e Texto
+    const indexAdmin = pedidosAdmin.findIndex(p => p.id == idPedidoParaCancelarAdmin);
+    
+    if (indexAdmin !== -1) {
+        pedidosAdmin[indexAdmin].status = "Cancelado";
+        pedidosAdmin[indexAdmin].justificativa = motivoSelecionado;
+        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
+    }
+    
+    // 2. SINCRONIZA COM O HISTÓRICO DO CLIENTE (historicoPedidos)
+    let historicoCliente = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+    
+    // CORREÇÃO AQUI: Usando '==' para que o JS encontre o pedido correto do cliente!
+    const indexCliente = historicoCliente.findIndex(p => p.id == idPedidoParaCancelarAdmin);
+    
+    if (indexCliente !== -1) {
+        historicoCliente[indexCliente].status = "Cancelado";
+        historicoCliente[indexCliente].justificativa = motivoSelecionado; // Salva o motivo para o cliente ver
+        localStorage.setItem('historicoPedidos', JSON.stringify(historicoCliente));
+    }
+    
+    // Fecha o modal e dá o feedback visual
+    fecharModalJustificativa();
+    
+    if (typeof mostrarToast === 'function') {
+        mostrarToast("Pedido cancelado e motivo enviado ao cliente!");
+    } else {
+        alert("Pedido cancelado e motivo enviado ao cliente!");
+    }
+    
+    // Atualiza a tela do admin para refletir a mudança imediatamente
+    if (typeof mostrarPedidosNoAdmin === 'function') mostrarPedidosNoAdmin();
+}
+
+function filtrarPedidosAdmin() {
+    // 1. Pega os valores do campo de busca e do filtro de status
+    const termoBusca = document.getElementById('busca-admin').value.toLowerCase();
+    const statusFiltro = document.getElementById('filtro-status-admin').value;
+    
+    // 2. Seleciona todos os cards de pedidos
+    const cards = document.querySelectorAll('.card-pedido-admin');
+
+    cards.forEach(card => {
+        // Pega todo o texto do card (Nome do cliente, ID, etc) para a busca de texto
+        const textoCard = card.innerText.toLowerCase();
+        
+        // Pega o status atual do pedido. 
+        // Nota: O seu select de status dentro do card tem a classe ou estrutura que define o estado.
+        // Se o status estiver no <select> do card, lemos o valor selecionado nele:
+        const statusDoCard = card.querySelector('select').value; 
+
+        // 3. Verifica se o card atende aos critérios
+        const atendeBusca = textoCard.includes(termoBusca);
+        const atendeStatus = (statusFiltro === 'todos' || statusDoCard === statusFiltro);
+
+        // 4. Exibe ou oculta o card
+        if (atendeBusca && atendeStatus) {
+            card.style.display = 'block'; // Mostra
+        } else {
+            card.style.display = 'none';  // Esconde
+        }
+    });
 }

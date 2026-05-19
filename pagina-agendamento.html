@@ -17,7 +17,7 @@
         <section>
             <div class="logo-e-marca">
                 <div class="marca">
-                     <a href="padaria-landinpage.html" >Padaria Diniz</a>
+                     <a href="padaria-landinpage.html">Padaria Diniz</a>
                 </div>
                 <div class="logo">
                     <a href="padaria-landinpage.html" class="logo img">
@@ -31,8 +31,8 @@
                 <button id="btn-carrinho" onclick="abrirCarrinho()">🛒(<span id="contador-carrinho">0</span>)</button>
 
                 <a href="meus-pedidos.html">Códigos</a>
-                <a href="pagina-produtos.html"> Meus pedidos </a>
-                <a href="padaria-login.html"> Login </a>
+                <a href="pagina-produtos.html">Meus pedidos</a>
+                <a href="padaria-login.html">Login</a>
             </nav>
         </section>
     </header>
@@ -73,18 +73,25 @@
                     </div>
                 </div>
 
-                <!-- O CAMPO AGORA ESTÁ COMO DISPLAY BLOCK PARA FORÇAR A APARECER -->
-                <div class="container-data" id="data-picker-container" style="display: block; margin-top: 20px;">
-                    <label style="font-weight: 800; color: #4A3B32;">Agendar Retirada (Data e Horário):</label>
-                    <div style="display: flex; gap: 10px; margin-top: 8px;">
-                        <input type="date" id="data-retirada" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Nunito', sans-serif;">
-                        <input type="time" id="hora-retirada" required style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: 'Nunito', sans-serif;">
-                    </div>
+                <!-- Aviso informativo: o agendamento acontece no carrinho -->
+                <div style="
+                    margin-top: 20px;
+                    padding: 12px 16px;
+                    background: #FFF8EC;
+                    border-left: 4px solid var(--dourado-suave, #C8973D);
+                    border-radius: 8px;
+                    font-size: 0.92rem;
+                    color: #4A3B32;
+                    font-weight: 700;
+                ">
+                    📅 Após adicionar ao carrinho, você poderá <strong>agendar a data e horário de retirada</strong> diretamente na página de finalização do pedido.
                 </div>
 
                 <div class="btn-baixo">
                     <a href="pagina-catalogo.html?filtro=retiravel" class="botao-voltar">← Voltar</a>
-                    <button class="botao-agendar" id="btn-agendar-final" style="margin-top: 20px;">Confirmar Agendamento</button>
+                    <button class="botao-agendar" id="btn-adicionar-carrinho" style="margin-top: 20px;">
+                        🛒 Adicionar ao Carrinho
+                    </button>
                 </div>
             </div>
         </section>
@@ -106,7 +113,6 @@
     <div id="toast-container"></div>
     
     <script src="Script/funcionalidades.js"></script>
-    <!-- A mágica para o navegador parar de bugar: adicionei "?v=novo" -->
-    <script src="Script/agendamento.js?v=novo"></script>
+    <script src="Script/agendamento.js"></script>
 </body>
 </html>

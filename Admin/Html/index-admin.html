@@ -49,21 +49,32 @@
                 </div>
 
                 <div class="topbar-acoes-direita">
+    
+                <div class="filtros-admin-container" style="display: flex; gap: 10px; align-items: center;">
                     
                     <div class="busca-admin-container">
-                        <input type="text" id="busca-admin" placeholder="Procurar..." onkeyup="filtrarProdutosAdmin()">
+                        <input type="text" id="busca-admin" placeholder="Procurar pedido..." onkeyup="filtrarPedidosAdmin()">
                     </div>
 
-                    <div class="acoes-topo">
-                        <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
-                    </div>
-
-                    <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
-                        <span class="icone">↩️</span>
-                        <span class="texto-circulo">Sair</span>
-                    </a>
-
+                    <select id="filtro-status-admin" onchange="filtrarPedidosAdmin()" style="padding: 10px; border-radius: 8px; border: 1px solid #A89F98;">
+                        <option value="todos">Todos os Status</option>
+                        <option value="Pendente">⏳ Pendente</option>
+                        <option value="Em produção">👨‍🍳 Em produção</option>
+                        <option value="Finalizado">✅ Finalizado</option>
+                        <option value="Cancelado">🚫 Cancelado</option>
+                    </select>
+                    
                 </div>
+
+                <div class="acoes-topo">
+                    <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
+                </div>
+
+                <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
+                    <span class="icone">↩️</span>
+                    <span class="texto-circulo">Sair</span>
+                </a>
+            </div>
             </header>
 
             <section class="grid-admin" id="grid-admin-produtos">
@@ -151,6 +162,29 @@
             </div>
         </div>
     </div>
+
+    <div id="modal-justificativa-admin" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; font-family: sans-serif;">
+    <div class="modal-box" style="background: white; padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <h2 style="color: #D9534F; margin-bottom: 15px; font-size: 1.4rem;">🚫 Cancelar Pedido</h2>
+        <p style="color: #4A3B32; margin-bottom: 15px; font-size: 1rem;">Selecione o motivo do cancelamento para enviar ao cliente:</p>
+        
+        <select id="select-justificativa-admin" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #A89F98; margin-bottom: 25px; font-size: 1rem; color: #4A3B32; background: white;">
+            <option value="Produto fora de estoque">🥖 Produto fora de estoque</option>
+            <option value="Horário de funcionamento da padaria encerrado">⏰ Horário de funcionamento encerrado</option>
+            <option value="Ingredientes indisponíveis para produção">❌ Ingredientes indisponíveis</option>
+            <option value="Alta demanda na cozinha / Atraso crítico">🔥 Alta demanda / Impossível produzir</option>
+        </select>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="fecharModalJustificativa()" style="flex: 1; padding: 12px; background: #E0E0E0; color: #4A3B32; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem;">
+                Voltar
+            </button>
+            <button onclick="confirmarCancelamentoAdmin()" style="flex: 1; padding: 12px; background: #D9534F; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem;">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
 
     <div id="toast-container"></div>
     <script src="../../Script/funcionalidades.js"></script>

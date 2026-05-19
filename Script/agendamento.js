@@ -1,5 +1,7 @@
 /* =======================================================
-   LÓGICA DA PÁGINA DE AGENDAMENTO (Unificada com o Banco)
+   LÓGICA DA PÁGINA DE AGENDAMENTO (Simplificada)
+   - Escolha de quantidade e adição direta ao carrinho
+   - O agendamento de data/hora é feito na página de checkout
 ======================================================= */
 
 const DB_NAME = "PadariaDB_V6";
@@ -29,14 +31,12 @@ async function buscarProduto(id) {
     try {
         const db = await conectarBanco();
         
-        // Procura o ID em todos os setores do banco
         for (let setor of SETORES_DO_BANCO) {
             if (!db.objectStoreNames.contains(setor)) continue;
             
             const tx = db.transaction([setor], "readonly");
             const store = tx.objectStore(setor);
             
-            // Busca diretamente pela Chave
             const produtoEncontrado = await new Promise((resolve) => {
                 const request = store.get(id);
                 request.onsuccess = () => resolve(request.result);
@@ -44,7 +44,7 @@ async function buscarProduto(id) {
             });
 
             if (produtoEncontrado) {
-                return produtoEncontrado; // Se achou, retorna o produto e para de procurar!
+                return produtoEncontrado;
             }
         }
         return null;
@@ -61,7 +61,7 @@ function extrairNumeroPreco(textoPreco) {
     return parseFloat(valor);
 }
 
-// 5. RENDERIZAR A TELA (Mágica das Imagens Corrigida)
+// 5. Renderizar a Tela
 async function carregarTela() {
     produtoAtual = await buscarProduto(idProduto);
 
@@ -70,31 +70,27 @@ async function carregarTela() {
         return;
     }
 
-    // --- Textos Básicos ---
     document.getElementById('tituloproduto').innerText = produtoAtual.tituloproduto;
     document.getElementById('descricao').innerText = `Excelente escolha da nossa categoria de ${produtoAtual.setor}. Produto fresco preparado especialmente para você!`;
     
     atualizarPrecoTotal();
 
-    // --- Lógica da Galeria de Imagens BLINDADA ---
     const imgPrincipal = document.getElementById('produtoimagem');
     const containerMiniaturas = document.getElementById('container-miniaturas');
     
     let listaImagensBrutas = [];
     
-    // Pega as imagens independente do formato
     if (produtoAtual.imagens && Array.isArray(produtoAtual.imagens) && produtoAtual.imagens.length > 0) {
         listaImagensBrutas = produtoAtual.imagens; 
     } else if (produtoAtual.imagem) {
         listaImagensBrutas = [produtoAtual.imagem];
     }
 
-    // Aplica a correção de rota em TODAS as imagens do array
     let listaImagensCorrigidas = listaImagensBrutas.map(imgTemp => {
         if (imgTemp && imgTemp.startsWith('../../')) {
-            return './' + imgTemp.substring(6); // Remove o ../../ e troca por ./
+            return './' + imgTemp.substring(6);
         }
-        return imgTemp; // Se for Base64 ou já estiver certo, devolve intacto
+        return imgTemp;
     });
 
     if (listaImagensCorrigidas.length > 0) {
@@ -106,8 +102,6 @@ async function carregarTela() {
                 const imgMini = document.createElement('img');
                 imgMini.src = fotoSrc;
                 imgMini.alt = "Miniatura do produto";
-                
-                // Estilo das miniaturas
                 imgMini.style.cursor = 'pointer';
                 imgMini.style.width = '70px';
                 imgMini.style.height = '70px';
@@ -116,7 +110,6 @@ async function carregarTela() {
                 imgMini.style.border = '2px solid transparent';
                 imgMini.style.transition = '0.3s';
                 
-                // Evento para trocar a foto principal
                 imgMini.onclick = function() {
                     Array.from(containerMiniaturas.children).forEach(m => m.style.borderColor = 'transparent');
                     this.style.borderColor = 'var(--dourado-suave)';
@@ -125,13 +118,11 @@ async function carregarTela() {
 
                 containerMiniaturas.appendChild(imgMini);
             });
-            // Marca a primeira como ativa visualmente
             if(containerMiniaturas.firstChild) {
                 containerMiniaturas.firstChild.style.borderColor = 'var(--dourado-suave)';
             }
         }
     } else {
-        // Fallback caso não tenha nenhuma imagem
         if (imgPrincipal) imgPrincipal.src = "./Imagens/Logo.png";
     }
 }
@@ -158,103 +149,41 @@ document.getElementById('ret-btn').addEventListener('click', () => {
     }
 });
 
-// 7. LÓGICA DO BOTÃO DE AGENDAR (CARRINHO)
-const btnAgendar    = document.getElementById("btn-agendar-final");
-const containerData = document.getElementById("data-picker-container");
-const inputData     = document.getElementById("data-retirada");
+// 7. BOTÃO ADICIONAR AO CARRINHO (direto, sem data)
+const btnAdicionar = document.getElementById("btn-adicionar-carrinho");
 
-// Configurar a data mínima para amanhã
-const amanha = new Date();
-amanha.setDate(amanha.getDate() + 1);
-if(inputData) inputData.min = amanha.toISOString().split("T")[0];
+btnAdicionar.addEventListener("click", () => {
+    const nomeClienteLogado = localStorage.getItem("usuarioLogado");
 
-let etapa = "escolher-data";
-
-// 7. LÓGICA DO BOTÃO DE AGENDAR (CARRINHO)
-btnAgendar.addEventListener("click", () => {
-    // Passo 1: Mostrar o campo de data
-    if (etapa === "escolher-data") {
-        containerData.style.display = "flex";
-        btnAgendar.innerText = "Confirmar Agendamento";
-        etapa = "confirmar";
+    if (!nomeClienteLogado) {
+        mostrarToast("Por favor, faça login para adicionar itens ao carrinho!");
         return;
     }
 
-    // Passo 2: Confirmar e enviar para o carrinho
-    if (etapa === "confirmar") {
-        const nomeClienteLogado = localStorage.getItem("usuarioLogado");
-    
-        if (!nomeClienteLogado) {
-            mostrarToast("Por favor, faça login para adicionar itens ao carrinho!");
-            // Opcional: redirecionar para o login
-            // window.location.href = 'padaria-login.html';
-            return;
-        }
-
-        if (!inputData.value) {
-            mostrarToast("Escolha uma data para retirada!");
-            return;
-        }
-
-        // Criamos o objeto EXATAMENTE como o carrinho.js e funcionalidades.js esperam
-        const precoAtual = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
-        
-        const itemParaCarrinho = {
-            id: produtoAtual.id || Math.floor(1000 + Math.random() * 9000), // ID do produto
-            nome: produtoAtual.tituloproduto,
-            preco: extrairNumeroPreco(precoAtual),
-            quantidade: quantidade,
-            dataRetirada: inputData.value.split('-').reverse().join('/') // Formata a data para DD/MM/AAAA
-        };
-
-        // Resgatamos o carrinho atual do localStorage ou criamos um array vazio
-        let carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
-        
-        // Adicionamos o novo item
-        carrinhoAtual.push(itemParaCarrinho);
-        
-        // Salvamos de volta no localStorage na chave 'carrinho'
-        localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
-
-        // Feedback visual mais agradável que o 'alert'
-        mostrarToast(`${produtoAtual.tituloproduto} adicionado ao carrinho!`);
-
-        // Resetar a interface do botão para futuros cliques
-        containerData.style.display = "none";
-        inputData.value = "";
-        btnAgendar.innerText = "Escolher Data";
-        etapa = "escolher-data";
-
-        // MÁGICA ACONTECE AQUI: Atualiza os números e abre a aba lateral!
-        abrirCarrinho(); 
+    if (!produtoAtual) {
+        mostrarToast("Erro: produto não carregado.");
+        return;
     }
-});
 
-// Inicializa tudo quando a página carregar
-document.addEventListener("DOMContentLoaded", carregarTela);
-
-// ENTRADA DE DADOS - PEDIDOS
-// Exemplo de função para finalizar o pedido
-function finalizarPedido(dadosCliente, itensSelecionados) {
-    // 1. Criar o objeto do pedido
-    const novoPedido = {
-        id: Math.floor(1000 + Math.random() * 9000), // Gera um ID aleatório
-        cliente: dadosCliente.nome,
-        data: new Date().toLocaleDateString('pt-BR'),
-        valor: calcularTotal(itensSelecionados),
-        status: "Pendente",
-        itens: itensSelecionados
+    const precoAtual = produtoAtual.precoOferta ? produtoAtual.precoOferta : produtoAtual.preco;
+    
+    const itemParaCarrinho = {
+        id: produtoAtual.id || Math.floor(1000 + Math.random() * 9000),
+        nome: produtoAtual.tituloproduto,
+        preco: extrairNumeroPreco(precoAtual),
+        quantidade: quantidade,
+        dataRetirada: null,  // Será definido na página de checkout
+        horaRetirada: null   // Será definido na página de checkout
     };
 
-    // 2. Buscar pedidos existentes ou criar lista vazia
-    const pedidosAtuais = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    let carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
+    carrinhoAtual.push(itemParaCarrinho);
+    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
 
-    // 3. Adicionar o novo pedido à lista
-    pedidosAtuais.push(novoPedido);
+    mostrarToast(`✅ ${produtoAtual.tituloproduto} adicionado! Agende a retirada no carrinho.`);
 
-    // 4. Salvar de volta no localStorage
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAtuais));
+    abrirCarrinho(); 
+});
 
-    // 5. Redirecionar para o admin (como você solicitou)
-    window.location.href = 'index-admin.html';
-}
+// Inicializa a tela ao carregar
+document.addEventListener("DOMContentLoaded", carregarTela);
