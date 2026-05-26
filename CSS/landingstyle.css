@@ -192,7 +192,7 @@
 .botao-produtos-padaria::after { content: "🥖"; }
 .botao-produtos-acougue::after { content: "🥩"; }
 .botao-produtos-hortifruti::after { content: "🥕"; }
-.botao-produtos-mercado::after { content: "🧺"; }
+.botao-produtos-mercearia::after { content: "🧺"; }
 
 .btn-setores a::after {
     opacity: 0;

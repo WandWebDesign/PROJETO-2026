@@ -6,7 +6,7 @@
 
 const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 3;
-const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
+const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercearia"];
 
 let produtoAtual = null; 
 let quantidade = 1;      

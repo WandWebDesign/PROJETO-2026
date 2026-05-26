@@ -1,6 +1,6 @@
 const DB_NAME = "PadariaDB_V6";
 const DB_VERSION = 3; 
-const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercado"];
+const SETORES_DO_BANCO = ["padaria", "acougue", "hortifruti", "mercearia"];
 
 // 1. Conecta ao IndexedDB E CRIA AS TABELAS (O que faltava!)
 function conectarBanco() {
@@ -147,7 +147,7 @@ async function carregarLandingPage() {
         popularCarrossel("carrossel-padaria", todosProdutos.filter(([id, p]) => p.setor === "padaria"));
         popularCarrossel("carrossel-açougue", todosProdutos.filter(([id, p]) => p.setor === "acougue"));
         popularCarrossel("carrossel-hortifruti", todosProdutos.filter(([id, p]) => p.setor === "hortifruti"));
-        popularCarrossel("carrossel-mercado", todosProdutos.filter(([id, p]) => p.setor === "mercado"));
+        popularCarrossel("carrossel-mercearia", todosProdutos.filter(([id, p]) => p.setor === "mercearia"));
 
     } catch (erro) {
         console.error("Erro na Landing Page:", erro);

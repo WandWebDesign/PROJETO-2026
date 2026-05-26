@@ -262,7 +262,7 @@ async function pesquisarProdutos() {
         });
 
         // 4. Vasculha todos os setores usando CURSOR para extrair o ID com segurança
-        const setores = ["padaria", "acougue", "hortifruti", "mercado"];
+        const setores = ["padaria", "acougue", "hortifruti", "mercearia"];
         let todosOsProdutos = [];
 
         for (let setor of setores) {
