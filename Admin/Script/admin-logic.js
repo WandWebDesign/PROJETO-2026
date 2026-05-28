@@ -19,6 +19,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// =======================================================
+// 0. TRAVA DE SEGURANÇA (VERIFICAÇÃO DE CARGO)
+// =======================================================
+// admin-logic.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- INÍCIO DA TRAVA DE SEGURANÇA ---
+    const tipoUsuario = localStorage.getItem('tipoUsuario');
+    const estaLogado = localStorage.getItem('usuarioLogado');
+
+    // Se o usuário não estiver logado ou não for funcionário:
+    if (estaLogado !== 'true' || tipoUsuario !== 'funcionario') {
+        abrirModalAviso(
+            'Acesso Restrito', 
+            'Esta área é exclusiva para colaboradores da Padaria Diniz. Por favor, faça login com as credenciais corretas.'
+        );
+        
+        // Redireciona para o login após o usuário fechar o modal ou tenta forçar a saída
+        setTimeout(() => {
+            window.location.href = '../../padaria-login.html'; 
+        }, 2000); // Dá um tempo para ele ler o aviso
+        
+        return; // Impede que o resto da página administrativa carregue
+    }
+    // --- FIM DA TRAVA DE SEGURANÇA ---
+
+    // A partir daqui, o código original do seu Admin continua normalmente...
+    const urlParams = new URLSearchParams(window.location.search);
+    const setorDesejado = urlParams.get("setor");
+    // ... restante do seu código
+});
+
 // 1. CONEXÃO COM O BANCO
 function abrirBancoAdmin() {
     return new Promise((resolve, reject) => {
