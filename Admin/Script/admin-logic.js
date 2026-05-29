@@ -1,106 +1,82 @@
 /* =======================================================
-   LÓGICA ADMINISTRATIVA DO CRUD (IndexedDB)
+   LÓGICA ADMINISTRATIVA DO CRUD (Integrado ao MySQL via Node.js)
 ======================================================= */
 
-const DB_NAME = "PadariaDB_V6";
-const DB_VERSION = 3;
 let setorAdminAtual = 'padaria'; 
-let imagensTemporarias = []; // Array global para as fotos
+let imagensTemporarias = []; 
 
+// TRAVA DE SEGURANÇA
 document.addEventListener('DOMContentLoaded', () => {
-    // Verifica se veio redirecionado da página de agendamento
-    const urlParams = new URLSearchParams(window.location.search);
-    const setorDesejado = urlParams.get("setor");
-    
-    if (setorDesejado) {
-        carregarSetorAdmin(setorDesejado);
-    } else {
-        carregarSetorAdmin(setorAdminAtual);
-    }
-});
-
-// =======================================================
-// 0. TRAVA DE SEGURANÇA (VERIFICAÇÃO DE CARGO)
-// =======================================================
-// admin-logic.js
-
-document.addEventListener('DOMContentLoaded', () => {
-    // --- INÍCIO DA TRAVA DE SEGURANÇA ---
     const tipoUsuario = localStorage.getItem('tipoUsuario');
     const estaLogado = localStorage.getItem('usuarioLogado');
 
-    // Se o usuário não estiver logado ou não for funcionário:
     if (estaLogado !== 'true' || tipoUsuario !== 'funcionario') {
-        abrirModalAviso(
-            'Acesso Restrito', 
-            'Esta área é exclusiva para colaboradores da Padaria Diniz. Por favor, faça login com as credenciais corretas.'
-        );
-        
-        // Redireciona para o login após o usuário fechar o modal ou tenta forçar a saída
-        setTimeout(() => {
-            window.location.href = '../../padaria-login.html'; 
-        }, 2000); // Dá um tempo para ele ler o aviso
-        
-        return; // Impede que o resto da página administrativa carregue
+        if(typeof abrirModalAviso === 'function') {
+            abrirModalAviso('Acesso Restrito', 'Esta área é exclusiva para colaboradores.');
+        } else {
+            alert('Acesso Restrito: Área exclusiva para colaboradores.');
+        }
+        setTimeout(() => { window.location.href = '../../padaria-login.html'; }, 2000); 
+        return; 
     }
-    // --- FIM DA TRAVA DE SEGURANÇA ---
 
-    // A partir daqui, o código original do seu Admin continua normalmente...
     const urlParams = new URLSearchParams(window.location.search);
     const setorDesejado = urlParams.get("setor");
-    // ... restante do seu código
+    carregarSetorAdmin(setorDesejado || setorAdminAtual);
 });
 
-// 1. CONEXÃO COM O BANCO
-function abrirBancoAdmin() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME);
-        request.onsuccess = e => resolve(e.target.result);
-        request.onerror = () => reject("Erro ao acessar banco de dados.");
-    });
-}
-
-// 2. LER (Carrega a grade)
-// 2. LER (Carrega a grade de Produtos, Pedidos ou Vendas)
+// =======================================================
+// LER (Busca na API)
+// =======================================================
 async function carregarSetorAdmin(setor) {
     setorAdminAtual = setor;
     const gridAdmin = document.getElementById('grid-admin-produtos'); 
+    const filtroStatus = document.getElementById('filtro-status-admin');
+    const buscaInput = document.getElementById('busca-admin');
     
-    // Atualiza o título e o botão ativo na barra lateral
     document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
     const btnAtivo = document.getElementById(`btn-${setor}`);
     if(btnAtivo) btnAtivo.classList.add('ativo');
 
-    // --- LÓGICA DE EXIBIÇÃO DIFERENCIADA ---
-    
+    // Limpa a barra de busca ao trocar de aba
+    if(buscaInput) buscaInput.value = '';
+
     if (setor === 'vendas') {
-        // VENDAS: Ocupa a largura total (Dashboard)
         gridAdmin.style.display = 'block'; 
         document.querySelector('.acoes-topo').style.display = 'none'; 
-        document.querySelector('.busca-admin-container').style.display = 'none';
+        document.querySelector('.filtros-admin-container').style.display = 'none';
         mostrarVendasNoAdmin();
     } 
     else if (setor === 'pedidos') {
-        // PEDIDOS: Volta a ser GRELHA para os cartões ficarem lado a lado
         gridAdmin.style.display = 'grid'; 
         document.querySelector('.acoes-topo').style.display = 'none'; 
-        document.querySelector('.busca-admin-container').style.display = 'block';
+        document.querySelector('.filtros-admin-container').style.display = 'flex';
+        
+        if(filtroStatus) filtroStatus.style.display = 'block';
+        if(buscaInput) buscaInput.placeholder = "Procurar pedido ou cliente...";
+        
         mostrarPedidosNoAdmin();
     } 
     else {
-        // PRODUTOS (Padaria, Açougue, etc): Mantém a GRELHA de produtos
         gridAdmin.style.display = 'grid'; 
         document.querySelector('.acoes-topo').style.display = 'block';
-        document.querySelector('.busca-admin-container').style.display = 'block';
+        document.querySelector('.filtros-admin-container').style.display = 'flex';
         
-        const db = await abrirBancoAdmin();
-        const tx = db.transaction(setor, 'readonly');
-        const store = tx.objectStore(setor);
-        const req = store.getAll();
-        req.onsuccess = () => { desenharGradeAdmin(req.result); };
+        if(filtroStatus) filtroStatus.style.display = 'none'; // Esconde filtro de status
+        if(buscaInput) buscaInput.placeholder = "Procurar produto...";
+        
+        try {
+            const resposta = await fetch('http://localhost:3000/api/produtos');
+            const produtosCompletos = await resposta.json();
+            const produtosDoSetor = produtosCompletos.filter(p => p.nome_setor === setor);
+            desenharGradeAdmin(produtosDoSetor);
+        } catch (erro) {
+            gridAdmin.innerHTML = '<p>Erro ao conectar com o banco de dados.</p>';
+        }
     }
 }
+
 function desenharGradeAdmin(produtos) {
     const grid = document.getElementById('grid-admin-produtos');
     grid.innerHTML = '';
@@ -111,88 +87,76 @@ function desenharGradeAdmin(produtos) {
     }
 
     produtos.forEach(prod => {
-        const precoDisplay = prod.precoOferta ? prod.precoOferta : prod.preco;
-        
-        // Pega a primeira imagem do array (se for novo) ou a imagem única (se for antigo)
-        let caminhoImagem = "";
-        if (prod.imagens && prod.imagens.length > 0) {
-            caminhoImagem = prod.imagens[0];
-        } else if (prod.imagem) {
-            caminhoImagem = prod.imagem.startsWith('./') ? '../../' + prod.imagem.substring(2) : prod.imagem;
+        // Formata os preços que vêm do banco (ex: 15.90 -> 15,90 / Kg)
+        const precoFormatado = parseFloat(prod.valor).toFixed(2).replace('.', ',');
+        const unidade = prod.unidade_medida ? ` / ${prod.unidade_medida}` : "";
+        let precoDisplay = precoFormatado + unidade;
+
+        if (prod.preco_oferta) {
+            const oferta = parseFloat(prod.preco_oferta).toFixed(2).replace('.', ',');
+            precoDisplay = `🔥 Oferta: R$ ${oferta}${unidade}`;
+        } else {
+            precoDisplay = `R$ ${precoDisplay}`;
         }
 
+        const imagemCapa = prod.imagem_base64 || "../../Imagens/Logo.png";
+        
+        // Passa o objeto inteiro formatado como JSON para facilitar a edição
         const jsonProd = encodeURIComponent(JSON.stringify(prod));
 
         grid.innerHTML += `
             <div class="card-admin">
-                <button class="btn-deletar-card" onclick="apagarProduto('${prod.id}', '${prod.setor}')" title="Excluir Produto">🗑️</button>
-                <img src="${caminhoImagem}" alt="${prod.tituloproduto}">
-                <h5>Setor: ${prod.setor}</h5>
-                <h3>${prod.tituloproduto}</h3>
-                <p class="preco">R$ ${precoDisplay}</p>
+                <button class="btn-deletar-card" onclick="apagarProduto('${prod.codigo_produto}')" title="Excluir Produto">🗑️</button>
+                <img src="${imagemCapa}" alt="${prod.nome}">
+                <h5>Setor: ${prod.nome_setor}</h5>
+                <h3>${prod.nome}</h3>
+                <p class="preco">${precoDisplay}</p>
                 <button class="btn-editar-card" onclick="abrirModalEditar('${jsonProd}')">Editar Produto</button>
             </div>
         `;
     });
 }
 
-// 3. EXCLUIR
 // =======================================================
-// 3. EXCLUIR (Com Modal Personalizado)
+// EXCLUIR PRODUTO
 // =======================================================
-
-// Variáveis para "lembrar" qual produto o utilizador quer apagar
 let produtoParaApagarId = null;
-let produtoParaApagarSetor = null;
 
-// Esta função agora apenas ABRIRÁ o nosso pop-up bonitinho
-function apagarProduto(idProduto, setorProduto) {
-    // Guarda as informações na memória
-    produtoParaApagarId = idProduto;
-    produtoParaApagarSetor = setorProduto;
-    
-    // Mostra o pop-up
+function apagarProduto(codigoProduto) {
+    produtoParaApagarId = codigoProduto;
     document.getElementById('modal-excluir').style.display = 'flex';
 }
 
-// Se o utilizador desistir
 function fecharModalExcluir() {
     document.getElementById('modal-excluir').style.display = 'none';
     produtoParaApagarId = null;
-    produtoParaApagarSetor = null;
 }
 
-// Se o utilizador clicar no botão vermelho "Sim, Excluir"
 async function confirmarExclusao() {
-    // Segurança: Se não há produto gravado na memória, não faz nada
-    if (!produtoParaApagarId || !produtoParaApagarSetor) return;
+    if (!produtoParaApagarId) return;
 
     try {
-        const db = await abrirBancoAdmin();
-        const tx = db.transaction(produtoParaApagarSetor, 'readwrite');
-        const store = tx.objectStore(produtoParaApagarSetor);
-        
-        // Exclui do banco de dados
-        store.delete(produtoParaApagarId);
+        const resposta = await fetch(`http://localhost:3000/api/produtos/${produtoParaApagarId}`, {
+            method: 'DELETE'
+        });
 
-        tx.oncomplete = () => {
-            fecharModalExcluir(); // Fecha o pop-up
-            if(typeof mostrarToast === 'function') mostrarToast("Produto excluído com sucesso!");
-            carregarSetorAdmin(produtoParaApagarSetor); // Recarrega a grelha
-        };
+        if (resposta.ok) {
+            fecharModalExcluir();
+            if(typeof mostrarToast === 'function') mostrarToast("Produto excluído do banco de dados!");
+            carregarSetorAdmin(setorAdminAtual); 
+        } else {
+            alert("Falha ao excluir produto.");
+        }
     } catch (erro) {
-        alert("Erro ao excluir produto.");
+        alert("Erro de conexão ao excluir.");
     }
 }
 
-// 4. MODAL E LÓGICA DE UPLOAD
+// =======================================================
+// MODAL E UPLOAD DE IMAGENS EM BASE64
+// =======================================================
 function gerenciarUploadImagens(input) {
     const arquivos = Array.from(input.files);
-
-    if (imagensTemporarias.length + arquivos.length > 6) {
-        alert("Erro: O limite máximo é de 6 imagens por produto.");
-        return;
-    }
 
     arquivos.forEach(arquivo => {
         const leitor = new FileReader();
@@ -202,24 +166,33 @@ function gerenciarUploadImagens(input) {
         };
         leitor.readAsDataURL(arquivo);
     });
-    input.value = ""; // Reseta o input para permitir selecionar a mesma foto depois se quiser
+    input.value = ""; 
 }
 
 function renderizarPreviews() {
     const grid = document.getElementById('grid-previsualizacao');
+    if (!grid) return; // Segurança
+    
     grid.innerHTML = "";
 
     if (imagensTemporarias.length === 0) {
-        grid.innerHTML = '<p class="msg-vazia">Nenhuma foto selecionada (Mínimo 4 necessárias)</p>';
+        grid.innerHTML = '<p class="msg-vazia" style="color: #A89F98; font-size: 0.9rem; margin: 0;">Nenhuma foto selecionada</p>';
         return;
     }
 
     imagensTemporarias.forEach((foto, index) => {
         const div = document.createElement('div');
         div.className = 'foto-preview';
+        div.style.position = 'relative'; // Garante o posicionamento do botão X
+        
         div.innerHTML = `
-            <img src="${foto}">
-            <button type="button" class="btn-remover-foto" onclick="removerFotoTemporaria(${index})">×</button>
+            <img src="${foto}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+            <button type="button" 
+                    class="btn-remover-foto" 
+                    onclick="removerFotoTemporaria(${index})"
+                    style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px;">
+                ×
+            </button>
         `;
         grid.appendChild(div);
     });
@@ -232,12 +205,10 @@ function removerFotoTemporaria(index) {
 
 function abrirModalProduto() {
     document.getElementById('form-produto').reset();
-    document.getElementById('prod-id').disabled = false; 
-    document.getElementById('prod-id-original').value = ""; 
+    document.getElementById('prod-id').value = ""; 
     document.getElementById('modal-titulo').innerText = "Adicionar Novo Produto";
     document.getElementById('prod-setor').value = setorAdminAtual; 
     
-    // Zera as imagens
     imagensTemporarias = [];
     renderizarPreviews();
 
@@ -248,27 +219,39 @@ function abrirModalEditar(jsonProdutoCodificado) {
     const prod = JSON.parse(decodeURIComponent(jsonProdutoCodificado));
     
     document.getElementById('modal-titulo').innerText = "Editar Produto";
-    document.getElementById('prod-id-original').value = prod.id; 
-    document.getElementById('prod-id').value = prod.id;
-    document.getElementById('prod-id').disabled = true; 
+    document.getElementById('prod-id').value = prod.codigo_produto; // Guarda o ID para o Update
     
-    document.getElementById('prod-setor').value = prod.setor;
-    document.getElementById('prod-titulo').value = prod.tituloproduto;
-    document.getElementById('prod-preco').value = prod.preco;
-    document.getElementById('prod-oferta').value = prod.precoOferta || "";
+    document.getElementById('prod-setor').value = prod.nome_setor || setorAdminAtual;
+    document.getElementById('prod-categoria').value = prod.categoria || "padaria";
+    document.getElementById('prod-titulo').value = prod.nome;
     
-    // CARREGA AS IMAGENS PARA A EDIÇÃO (Compatibilidade com produtos antigos e novos)
+    // Reconstrói o preço visual (ex: 15,90 / Kg)
+    const precoFormatado = parseFloat(prod.valor).toFixed(2).replace('.', ',');
+    document.getElementById('prod-preco').value = precoFormatado;
+    
+    if (prod.preco_oferta) {
+        const ofertaFormatada = parseFloat(prod.preco_oferta).toFixed(2).replace('.', ',');
+        document.getElementById('prod-oferta').value = ofertaFormatada;
+    } else {
+        document.getElementById('prod-oferta').value = "";
+    }
+
+    // Marca a caixinha de unidade correta
+    if (prod.unidade_medida) {
+        document.getElementById('prod-unidade').value = prod.unidade_medida;
+    } else {
+        document.getElementById('prod-unidade').value = "Un"; // Padrão
+    }
+
+    document.getElementById('prod-estoque').value = prod.quantidade_estoque;
+    document.getElementById('prod-tag-retiravel').checked = prod.is_retiravel === 1;
+
+    // Carrega a imagem do banco para o array temporário
     imagensTemporarias = [];
-    if (prod.imagens && Array.isArray(prod.imagens)) {
-        imagensTemporarias = [...prod.imagens];
-    } else if (prod.imagem) {
-        let caminhoAntigo = prod.imagem.startsWith('./') ? '../../' + prod.imagem.substring(2) : prod.imagem;
-        imagensTemporarias.push(caminhoAntigo);
+    if (prod.imagem_base64) {
+        imagensTemporarias.push(prod.imagem_base64);
     }
     renderizarPreviews();
-
-    document.getElementById('prod-tag-retiravel').checked = prod.tags && prod.tags.includes('retiravel');
-    document.getElementById('prod-tag-oferta').checked = prod.tags && prod.tags.includes('oferta');
 
     document.getElementById('modal-produto').style.display = 'flex';
 }
@@ -277,468 +260,286 @@ function fecharModalProduto() {
     document.getElementById('modal-produto').style.display = 'none';
 }
 
-// 5. CRIAR e ATUALIZAR (Unificado)
+// =======================================================
+// SALVAR NO BANCO (CREATE / UPDATE)
+// =======================================================
 async function salvarProduto() {
-    const id = document.getElementById('prod-id').value.trim().toLowerCase().replace(/\s+/g, '');
+    const id = document.getElementById('prod-id').value; 
     const setor = document.getElementById('prod-setor').value;
     const titulo = document.getElementById('prod-titulo').value;
-    const preco = document.getElementById('prod-preco').value;
-    const oferta = document.getElementById('prod-oferta').value;
-    
-    if(!id || !titulo || !preco) {
-        alert("Preencha todos os campos de texto obrigatórios!");
+    const precoBruto = document.getElementById('prod-preco').value;
+    const ofertaBruta = document.getElementById('prod-oferta').value;
+    const unidadeMedida = document.getElementById('prod-unidade').value;
+    const categoria = document.getElementById('prod-categoria').value;
+    const estoqueDigitado = parseInt(document.getElementById('prod-estoque').value) || 0;
+    const isRetiravel = document.getElementById('prod-tag-retiravel').checked ? 1 : 0;
+
+    if(!titulo || !precoBruto) {
+        alert("Preencha o Título e o Preço Principal!");
         return;
     }
 
-    if (imagensTemporarias.length < 4) {
-        alert("Atenção: Você precisa adicionar pelo menos 4 imagens para o produto.");
-        return;
-    }
+    const valorDecimal = parseFloat(precoBruto.replace(',', '.').trim());
+    let precoOfertaDecimal = ofertaBruta ? parseFloat(ofertaBruta.replace(',', '.').trim()) : null;
 
-    let tagsAtivas = [];
-    if(document.getElementById('prod-tag-retiravel').checked) tagsAtivas.push('retiravel');
-    if(document.getElementById('prod-tag-oferta').checked) tagsAtivas.push('oferta');
-    if(tagsAtivas.length === 0) tagsAtivas = null;
-
-    const objetoProduto = {
-        id: id,
-        setor: setor,
-        tituloproduto: titulo,
-        preco: preco,
-        precoOferta: oferta || null,
-        imagens: imagensTemporarias, // Salva todas as fotos no array
-        imagem: imagensTemporarias[0], // Compatibilidade: a loja principal ainda lê '.imagem'
-        tags: tagsAtivas
+    const payload = {
+        setor,
+        nome: titulo,
+        valor: valorDecimal,
+        preco_oferta: precoOfertaDecimal,
+        quantidade_estoque: estoqueDigitado,
+        is_retiravel: isRetiravel,
+        unidade_medida: unidadeMedida,
+        categoria: categoria,
+        imagens: imagensTemporarias 
     };
 
     try {
-        const db = await abrirBancoAdmin();
-        const tx = db.transaction(setor, 'readwrite');
-        const store = tx.objectStore(setor);
+        const url = id ? `http://localhost:3000/api/produtos/${id}` : 'http://localhost:3000/api/produtos';
+        const metodo = id ? 'PUT' : 'POST';
 
-        store.put(objetoProduto);
+        const resposta = await fetch(url, {
+            method: metodo,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-        tx.oncomplete = () => {
+        if (resposta.ok) {
             fecharModalProduto();
             if(typeof mostrarToast === 'function') mostrarToast("Produto salvo com sucesso!");
             carregarSetorAdmin(setor); 
-        };
+        } else {
+            const erro = await resposta.json();
+            alert("Erro ao salvar: " + erro.erro);
+        }
     } catch (erro) {
-        alert("Erro ao salvar no banco de dados.");
+        alert("Erro de conexão ao salvar produto.");
     }
 }
 
-// 6. BUSCA VISUAL ATUALIZADA (Inteligente para Produtos e Pedidos)
-function filtrarProdutosAdmin() {
-    // Pega o que o usuário digitou, transforma em minúsculas e tira os espaços em branco extras
+// =======================================================
+// O RESTANTE DO CÓDIGO (Busca, Vendas e Pedidos) FICA INTACTO
+// =======================================================
+
+function filtrarTelaAdmin() {
     const termo = document.getElementById('busca-admin').value.toLowerCase().trim();
 
-    // Cenário A: O Admin está na aba de Pedidos
     if (setorAdminAtual === 'pedidos') {
+        const statusFiltro = document.getElementById('filtro-status-admin').value;
         const cardsPedidos = document.querySelectorAll('.card-pedido-admin');
         
         cardsPedidos.forEach(card => {
-            // Captura o código do pedido (ex: "#123456") e o nome do cliente
-            const codigo = card.querySelector('.pedido-header h3').innerText.toLowerCase();
-            const cliente = card.querySelector('.pedido-cliente h5').innerText.toLowerCase();
+            const textoCard = card.innerText.toLowerCase(); // Busca por ID, nome do cliente, etc.
+            const statusDoCard = card.querySelector('select').value; 
             
-            // Verifica se o termo digitado bate com o código OU com o nome do cliente
-            if(codigo.includes(termo) || cliente.includes(termo)) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
+            const atendeBusca = textoCard.includes(termo);
+            const atendeStatus = (statusFiltro === 'todos' || statusDoCard === statusFiltro);
+            
+            card.style.display = (atendeBusca && atendeStatus) ? 'flex' : 'none';
         });
-    } 
-    // Cenário B: O Admin está nas abas de Produtos (Padaria, Açougue...)
-    else {
+    } else if (setorAdminAtual !== 'vendas') {
+        // Se for produtos (Padaria, Açougue...)
         const cardsProdutos = document.querySelectorAll('.card-admin');
-        
         cardsProdutos.forEach(card => {
             const titulo = card.querySelector('h3').innerText.toLowerCase();
-            
-            if(titulo.includes(termo)) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
+            card.style.display = titulo.includes(termo) ? 'flex' : 'none';
         });
     }
 }
+// =======================================================
+// LÓGICA DE PEDIDOS E VENDAS (VIA LOCALSTORAGE - TEMPORÁRIO)
+// =======================================================
 
-// =======================================================
-// ENTRADA DE DADOS - PEDIDOS (Atualizado para o novo Carrinho)
-// =======================================================
-
-// 1. Renderiza os pedidos com o seletor de Status
-// =======================================================
-// LÓGICA DE FORMATAÇÃO DE UNIDADES (Kg/g vs Unidades)
-// =======================================================
-function formatarQuantidadeProduto(nomeProduto, quantidadeEscolhida) {
-    const nomeLimpo = nomeProduto.toLowerCase();
-    
-    // Lista de palavras que indicam que o produto é vendido a cada 100g
-    const palavrasPeso = ['mortadela', 'presunto', 'mussarela', 'queijo', 'salame', 'peito de peru', 'apresuntado', 'frios', '100g'];
-    
-    // Verifica se alguma dessas palavras existe no nome do produto
-    const vendidoPorPeso = palavrasPeso.some(palavra => nomeLimpo.includes(palavra));
-    
-    if (vendidoPorPeso) {
-        const totalGramas = quantidadeEscolhida * 100;
-        
-        if (totalGramas >= 1000) {
-            // Se passou de 1000g, divide por 1000 para virar Kg (Ex: 1500 / 1000 = 1,5 kg)
-            let kilos = totalGramas / 1000;
-            return kilos.toString().replace('.', ',') + ' kg';
-        } else {
-            return totalGramas + ' g';
-        }
-    }
-    
-    // Se não for um produto de peso, o padrão é unidade
-    return quantidadeEscolhida + ' un';
-}
-
-// =======================================================
-// RENDERIZAÇÃO DOS PEDIDOS COM O NOVO DESIGN
-// =======================================================
 function mostrarPedidosNoAdmin() {
-    const gridAdmin = document.getElementById('grid-admin-produtos');
+    const grid = document.getElementById('grid-admin-produtos');
+    grid.innerHTML = '';
+    
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-
-    gridAdmin.innerHTML = '';
-
+    
     if (pedidos.length === 0) {
-        gridAdmin.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 50px; font-size: 1.2rem; font-weight: bold; color: var(--cafe-claro);">Nenhum pedido novo. ☕</p>';
+        grid.innerHTML = '<p class="msg-vazia" style="grid-column: 1 / -1; text-align: center; font-size: 1.2rem;">Nenhum pedido recebido ainda.</p>';
         return;
     }
 
-    pedidos.forEach(pedido => {
-        // Cores temáticas para o cabeçalho (agora com Cancelado)
-        const cores = {
-            "Pendente": "#D9534F",    // Vermelho 
-            "Em produção": "#F0AD4E", // Laranja/Dourado
-            "Finalizado": "#5CB85C",  // Verde
-            "Cancelado": "#777777"    // Cinza
-        };
-        const corCabecalho = cores[pedido.status] || '#A89F98';
+    const corPorStatus = {
+        'Pendente':    '#C8973D',
+        'Em produção': '#4A7C59',
+        'Finalizado':  '#28a745',
+        'Cancelado':   '#D9534F'
+    };
+    
+    pedidos.forEach((pedido, index) => {
+        const corHeader = corPorStatus[pedido.status] || '#C8973D';
+        const totalFormatado = parseFloat(pedido.valorTotal).toFixed(2).replace('.', ',');
+        
+        const isCancelado = pedido.status === 'Cancelado';
+        const isFinalizado = pedido.status === 'Finalizado';
+        const isTrancado = isCancelado || isFinalizado; // Se finalizou ou cancelou, não muda mais status
 
-        // 1. Gera a lista de produtos formatada
-        let listaProdutosHTML = '';
-        pedido.itens.forEach(item => {
-            const qtdFormatada = typeof formatarQuantidadeProduto === 'function' ? formatarQuantidadeProduto(item.nome, item.quantidade) : item.quantidade;
-            
-            const infoData = item.dataRetirada 
-                ? `<span style="font-size: 0.75rem; color: #5CB85C; display: block; font-weight: 800; margin-top: 3px;">📅 Agendado: ${item.dataRetirada}</span>` 
-                : `<span style="font-size: 0.75rem; color: var(--cafe-claro); display: block; margin-top: 3px;">🛒 Retirada Imediata</span>`;
+        const itensHTML = pedido.itens.map(item =>
+            `<li><span>${item.nome}</span><strong>${item.quantidade}x</strong></li>`
+        ).join('');
 
-            listaProdutosHTML += `
-                <li>
-                    <div style="flex: 1; padding-right: 10px;">
-                        <span style="font-weight: 800; color: var(--cafe-escuro);">${item.nome}</span>
-                        ${infoData}
-                    </div>
-                    <strong>${qtdFormatada}</strong>
-                </li>
-            `;
-        });
-
-        // 2. Lógica Visual de Cancelamento (Justificativa e Botão)
-        const justificativaHTML = pedido.justificativa 
-            ? `<div style="background: #FFF5F5; color: #C53030; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.85rem; border: 1px solid #FEB2B2;">
-                <strong>🚫 Motivo:</strong> ${pedido.justificativa}
-               </div>`
-            : '';
-
-        const botaoCancelar = (pedido.status !== "Cancelado" && pedido.status !== "Finalizado")
-            ? `<button onclick="abrirModalCancelamentoAdmin('${pedido.id}')" style="background: #D9534F; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.2s;">
-                Cancelar Pedido
-               </button>`
-            : '';
-
-        // Determina se a comanda deve ficar "apagada" (opaca)
-        const comandaOpaca = (pedido.status === 'Finalizado' || pedido.status === 'Cancelado' || pedido.status === 'Concluído') ? 'opacity: 0.6;' : '';
-
-        // 3. Monta a nova "Comanda"
-        const card = `
-            <div class="card-pedido-admin" style="${comandaOpaca}">
-                
-                <div class="pedido-header" style="background-color: ${corCabecalho};">
-                    <div>
-                        <h3>#${pedido.id}</h3>
-                        <span class="data">${pedido.dataPedido}</span>
-                    </div>
-                    <button class="btn-remover-pedido" onclick="removerPedido('${pedido.id}')" title="Apagar Pedido do Painel">✖</button>
+        grid.innerHTML += `
+            <div class="card-pedido-admin">
+                <div class="pedido-header" style="background: ${corHeader};">
+                    <h3>Pedido #${pedido.id}</h3>
+                    <span class="data">${pedido.status}</span>
                 </div>
 
                 <div class="pedido-body">
                     <div class="pedido-cliente">
                         <div class="icone-user">👤</div>
-                        <h5>${pedido.cliente}</h5>
+                        <div>
+                            <h5>${pedido.cliente}</h5>
+                            <span style="font-size:0.8rem; color:var(--cafe-claro);">📅 ${pedido.dataRetirada} às ${pedido.horaRetirada}</span>
+                        </div>
                     </div>
-                    
-                    <ul class="pedido-itens">
-                        ${listaProdutosHTML}
-                    </ul>
+
+                    <ul class="pedido-itens">${itensHTML}</ul>
 
                     <div class="pedido-total">
-                        Total: R$ ${pedido.valorTotal.toFixed(2).replace('.', ',')}
+                        R$ ${totalFormatado}
+                        <span style="font-size:0.85rem; font-weight:700; color:var(--cafe-claro); display:block; margin-top:4px;">💳 ${pedido.pagamento}</span>
                     </div>
-                    
-                    ${justificativaHTML}
                 </div>
-                
-                <div class="pedido-footer">
-                    <label>Status da Produção:</label>
-                    <select onchange="alterarStatusPedido('${pedido.id}', this.value)" ${pedido.status === 'Cancelado' ? 'disabled' : ''}>
-                        <option value="Pendente" ${pedido.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
-                        <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
-                        <option value="Finalizado" ${pedido.status === 'Finalizado' ? 'selected' : ''}>✅ Finalizado</option>
-                        ${pedido.status === 'Cancelado' ? `<option value="Cancelado" selected>🚫 Cancelado</option>` : ''}
-                    </select>
 
-                    ${botaoCancelar}
+                <div class="pedido-footer">
+                    <label>Alterar Status</label>
+                    <div style="display:flex; gap:10px;">
+                        <select onchange="alterarStatusPedido(${index}, this.value)" ${isTrancado ? 'disabled' : ''}>
+                            <option value="Pendente"    ${pedido.status === 'Pendente'    ? 'selected' : ''}>⏳ Pendente</option>
+                            <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
+                            <option value="Finalizado"  ${pedido.status === 'Finalizado'  ? 'selected' : ''}>✅ Finalizado</option>
+                            ${isCancelado ? `<option value="Cancelado" selected>🚫 Cancelado</option>` : ''}
+                        </select>
+                        
+                        ${!isTrancado ? 
+                            `<button class="btn-cancelar-pedido" onclick="abrirModalCancelamentoAdmin(${index})" title="Cancelar pedido">🚫</button>` 
+                            : 
+                            `<button onclick="removerPedidoAdmin(${index})" style="background: #A89F98; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer;" title="Apagar Histórico">🗑️</button>`
+                        }
+                    </div>
+                    ${isCancelado && pedido.justificativa ? `<p class="justificativa-cancelamento" style="margin-top:10px; font-size:0.85rem; color:#D9534F;">Motivo: ${pedido.justificativa}</p>` : ''}
                 </div>
             </div>
         `;
-        
-        gridAdmin.innerHTML += card;
     });
 }
 
-// 2. Função que sincroniza o status entre Admin e Cliente
-function alterarStatusPedido(idPedido, novoStatus) {
-    // A. Atualizar na lista do Admin
-    let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    const indexAdmin = pedidosAdmin.findIndex(p => p.id == idPedido);
-    
-    if (indexAdmin !== -1) {
-        pedidosAdmin[indexAdmin].status = novoStatus;
-        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
-    }
-
-    // B. Atualizar no Histórico do Cliente (para ele ver na página dele)
-    let historicoClientes = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
-    const indexCliente = historicoClientes.findIndex(p => p.id == idPedido);
-    
-    if (indexCliente !== -1) {
-        historicoClientes[indexCliente].status = novoStatus;
-        localStorage.setItem('historicoPedidos', JSON.stringify(historicoClientes));
-    }
-
-    if(typeof mostrarToast === 'function') mostrarToast(`Pedido #${idPedido} agora está ${novoStatus}!`);
-    mostrarPedidosNoAdmin(); // Recarrega a visualização
-}
-
-// Função única e segura para excluir pedidos
-function removerPedido(id) {
-    if(confirm("Tem certeza que deseja apagar este pedido do painel?")) {
+// NOVA FUNÇÃO: EXCLUIR PEDIDO DO HISTÓRICO
+function removerPedidoAdmin(index) {
+    if(confirm("Tem certeza que deseja apagar o registro deste pedido? Essa ação não pode ser desfeita.")) {
         let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-        // Filtra para manter apenas os pedidos que NÃO tem o id selecionado
-        pedidos = pedidos.filter(p => p.id != id);
-        
-        // Salva no banco e recarrega a tela
+        pedidos.splice(index, 1);
         localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+        if(typeof mostrarToast === 'function') mostrarToast("Pedido removido do histórico!");
         mostrarPedidosNoAdmin();
     }
 }
 
-// =======================================================
-// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
-// =======================================================
-// =======================================================
-// LÓGICA DA DASHBOARD DE VENDAS EM TEMPO REAL
-// =======================================================
+function alterarStatusPedido(index, novoStatus) {
+    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    pedidos[index].status = novoStatus;
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+    if(typeof mostrarToast === 'function') mostrarToast(`Status atualizado para: ${novoStatus}`);
+    mostrarPedidosNoAdmin();
+}
+
+let indiceCancelamentoAtual = null;
+
+function abrirModalCancelamentoAdmin(index) {
+    indiceCancelamentoAtual = index;
+    const modal = document.getElementById('modal-justificativa-admin');
+    if(modal) modal.style.display = 'flex';
+}
+
+function fecharModalJustificativa() {
+    indiceCancelamentoAtual = null;
+    const modal = document.getElementById('modal-justificativa-admin');
+    if(modal) modal.style.display = 'none';
+}
+
+function confirmarCancelamentoAdmin() {
+    if(indiceCancelamentoAtual === null) return;
+    
+    const justificativa = document.getElementById('select-justificativa-admin').value;
+    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    
+    pedidos[indiceCancelamentoAtual].status = 'Cancelado';
+    pedidos[indiceCancelamentoAtual].justificativa = justificativa; // Salva o motivo
+    
+    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
+    
+    fecharModalJustificativa();
+    if(typeof mostrarToast === 'function') mostrarToast("Pedido cancelado e cliente notificado!");
+    mostrarPedidosNoAdmin();
+}
+
 function mostrarVendasNoAdmin() {
-    const gridAdmin = document.getElementById('grid-admin-produtos');
+    const grid = document.getElementById('grid-admin-produtos');
     const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    
+    const finalizados  = pedidos.filter(p => p.status === 'Finalizado');
+    const cancelados   = pedidos.filter(p => p.status === 'Cancelado');
+    const emProducao   = pedidos.filter(p => p.status === 'Em produção');
+    const pendentes    = pedidos.filter(p => p.status === 'Pendente');
+    const totalArrecadado = finalizados.reduce((acc, p) => acc + p.valorTotal, 0);
 
-    // Variáveis de cálculo
-    let faturamentoTotal = 0;
-    let totalPedidosConcluidos = 0;
-    let contagemProdutos = {};
-
-    // 1. O motor de cálculo: Vasculha todos os pedidos reais do banco local
-    pedidos.forEach(pedido => {
-        // Conta apenas pedidos Finalizados ou Em produção para métricas financeiras
-        if (pedido.status !== "Pendente") {
-            faturamentoTotal += pedido.valorTotal;
-            totalPedidosConcluidos++;
-
-            // Conta os produtos mais vendidos
-            pedido.itens.forEach(item => {
-                if (!contagemProdutos[item.nome]) {
-                    contagemProdutos[item.nome] = { qtd: 0, tipo: formatarQuantidadeProduto(item.nome, 1).replace(/[0-9]/g, '').trim() };
-                }
-                contagemProdutos[item.nome].qtd += item.quantidade;
-            });
-        }
+    // Ranking de produtos mais vendidos
+    const contagemItens = {};
+    finalizados.forEach(p => {
+        p.itens.forEach(item => {
+            contagemItens[item.nome] = (contagemItens[item.nome] || 0) + item.quantidade;
+        });
     });
+    const ranking = Object.entries(contagemItens)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
 
-    // 2. Calcula Ticket Médio
-    let ticketMedio = totalPedidosConcluidos > 0 ? (faturamentoTotal / totalPedidosConcluidos) : 0;
-
-    // 3. Ordena o ranking dos Top 5 Produtos mais vendidos
-    const produtosRanking = Object.entries(contagemProdutos)
-        .sort((a, b) => b[1].qtd - a[1].qtd)
-        .slice(0, 5); // Pega só os 5 primeiros
-
-    let htmlRanking = '';
-    produtosRanking.forEach(prod => {
-        const nomeProd = prod[0];
-        const dadosProd = prod[1];
-        // Usa nossa função antiga para formatar kg, g ou un.
-        const qtdVisual = formatarQuantidadeProduto(nomeProd, dadosProd.qtd);
-        
-        htmlRanking += `
+    const rankingHTML = ranking.length > 0
+        ? ranking.map(([nome, qtd], i) => `
             <tr>
-                <td class="item-nome" style="font-size: 1.1rem; padding: 15px 0;">${nomeProd}</td>
-                <td class="item-qtd" style="font-size: 1.1rem; padding: 15px 0;">${qtdVisual}</td>
-            </tr>
-        `;
-    });
+                <td class="item-nome">${['🥇','🥈','🥉','4º','5º'][i]} ${nome}</td>
+                <td class="item-qtd">${qtd} un.</td>
+            </tr>`).join('')
+        : `<tr><td colspan="2" style="color:var(--cafe-claro); text-align:center; padding:20px 0;">Sem vendas ainda</td></tr>`;
 
-    if(htmlRanking === '') {
-        htmlRanking = '<tr><td colspan="2" style="text-align:center; color:var(--cafe-claro); padding: 30px;">Nenhuma venda registrada ainda.</td></tr>';
-    }
+    grid.innerHTML = `
+        <div class="dashboard-vendas" style="grid-column: 1 / -1;">
 
-    // 4. Monta a Tela (Design Corrigido: Sem paddings duplos e largura total)
-    gridAdmin.innerHTML = `
-        <div style="margin-bottom: 25px;">
-            <p style="color: var(--cafe-claro); font-size: 1rem;">Os dados abaixo consideram apenas pedidos <strong style="color: var(--cafe-escuro);">Finalizados</strong> ou <strong style="color: var(--cafe-escuro);">Em Produção</strong>.</p>
-        </div>
-
-        <section class="dashboard-vendas" style="padding: 0; margin-bottom: 40px;">
             <div class="metric-card">
-                <h4>Faturamento Confirmado</h4>
-                <div class="valor">R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}</div>
+                <h4>💰 Total Arrecadado</h4>
+                <span class="valor">R$ ${totalArrecadado.toFixed(2).replace('.', ',')}</span>
             </div>
-            
-            <div class="metric-card" style="border-left-color: var(--cafe-escuro);">
-                <h4>Pedidos Recebidos</h4>
-                <div class="valor">${totalPedidosConcluidos}</div>
-            </div>
-            
-            <div class="metric-card" style="border-left-color: #5cb85c;">
-                <h4>Ticket Médio</h4>
-                <div class="valor">R$ ${ticketMedio.toFixed(2).replace('.', ',')}</div>
-            </div>
-        </section>
 
-        <section style="width: 100%;">
-            <div class="card-admin" style="width: 100%; padding: 30px;">
-                <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--creme-fundo); padding-bottom: 15px; font-size: 1.3rem;">🏆 Top 5 Produtos Mais Vendidos</h3>
+            <div class="metric-card">
+                <h4>✅ Pedidos Entregues</h4>
+                <span class="valor">${finalizados.length}</span>
+            </div>
+
+            <div class="metric-card">
+                <h4>👨‍🍳 Em Produção</h4>
+                <span class="valor">${emProducao.length}</span>
+            </div>
+
+            <div class="metric-card">
+                <h4>⏳ Pendentes</h4>
+                <span class="valor">${pendentes.length}</span>
+            </div>
+
+            <div class="metric-card">
+                <h4>🚫 Cancelados</h4>
+                <span class="valor">${cancelados.length}</span>
+            </div>
+
+            <div class="metric-card" style="grid-column: span 2;">
+                <h4>🏆 Produtos Mais Vendidos</h4>
                 <table class="ranking-tabela">
-                    ${htmlRanking}
+                    <tbody>${rankingHTML}</tbody>
                 </table>
             </div>
-        </section>
+
+        </div>
     `;
-}
-
-/* =======================================================
-   REGRAS DE NEGÓCIO: CANCELAMENTO DO ADMIN COM JUSTIFICATIVA
-======================================================= */
-
-let idPedidoParaCancelarAdmin = null;
-
-/**
- * Abre o modal de justificativa guardando o ID do pedido selecionado
- */
-function abrirModalCancelamentoAdmin(idPedido) {
-    idPedidoParaCancelarAdmin = idPedido;
-    const modal = document.getElementById('modal-justificativa-admin');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-}
-
-/**
- * Fecha o modal de justificativa
- */
-function fecharModalJustificativa() {
-    const modal = document.getElementById('modal-justificativa-admin');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    idPedidoParaCancelarAdmin = null;
-}
-
-/**
- * Confirma o cancelamento, injeta o motivo e atualiza os LocalStorages
- */
-/* =======================================================
-   REGRAS DE NEGÓCIO: CANCELAMENTO DO ADMIN COM JUSTIFICATIVA
-======================================================= */
-function confirmarCancelamentoAdmin() {
-    if (!idPedidoParaCancelarAdmin) return;
-    
-    // Pega o motivo pré-estabelecido selecionado no dropdown
-    const motivoSelecionado = document.getElementById('select-justificativa-admin').value;
-    
-    // 1. ATUALIZA NA BASE DO ADMIN (pedidosPadaria)
-    let pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    
-    // CORREÇÃO AQUI: Usando '==' ao invés de '===' para ignorar a diferença entre Número e Texto
-    const indexAdmin = pedidosAdmin.findIndex(p => p.id == idPedidoParaCancelarAdmin);
-    
-    if (indexAdmin !== -1) {
-        pedidosAdmin[indexAdmin].status = "Cancelado";
-        pedidosAdmin[indexAdmin].justificativa = motivoSelecionado;
-        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
-    }
-    
-    // 2. SINCRONIZA COM O HISTÓRICO DO CLIENTE (historicoPedidos)
-    let historicoCliente = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
-    
-    // CORREÇÃO AQUI: Usando '==' para que o JS encontre o pedido correto do cliente!
-    const indexCliente = historicoCliente.findIndex(p => p.id == idPedidoParaCancelarAdmin);
-    
-    if (indexCliente !== -1) {
-        historicoCliente[indexCliente].status = "Cancelado";
-        historicoCliente[indexCliente].justificativa = motivoSelecionado; // Salva o motivo para o cliente ver
-        localStorage.setItem('historicoPedidos', JSON.stringify(historicoCliente));
-    }
-    
-    // Fecha o modal e dá o feedback visual
-    fecharModalJustificativa();
-    
-    if (typeof mostrarToast === 'function') {
-        mostrarToast("Pedido cancelado e motivo enviado ao cliente!");
-    } else {
-        alert("Pedido cancelado e motivo enviado ao cliente!");
-    }
-    
-    // Atualiza a tela do admin para refletir a mudança imediatamente
-    if (typeof mostrarPedidosNoAdmin === 'function') mostrarPedidosNoAdmin();
-}
-
-function filtrarPedidosAdmin() {
-    // 1. Pega os valores do campo de busca e do filtro de status
-    const termoBusca = document.getElementById('busca-admin').value.toLowerCase();
-    const statusFiltro = document.getElementById('filtro-status-admin').value;
-    
-    // 2. Seleciona todos os cards de pedidos
-    const cards = document.querySelectorAll('.card-pedido-admin');
-
-    cards.forEach(card => {
-        // Pega todo o texto do card (Nome do cliente, ID, etc) para a busca de texto
-        const textoCard = card.innerText.toLowerCase();
-        
-        // Pega o status atual do pedido. 
-        // Nota: O seu select de status dentro do card tem a classe ou estrutura que define o estado.
-        // Se o status estiver no <select> do card, lemos o valor selecionado nele:
-        const statusDoCard = card.querySelector('select').value; 
-
-        // 3. Verifica se o card atende aos critérios
-        const atendeBusca = textoCard.includes(termoBusca);
-        const atendeStatus = (statusFiltro === 'todos' || statusDoCard === statusFiltro);
-
-        // 4. Exibe ou oculta o card
-        if (atendeBusca && atendeStatus) {
-            card.style.display = 'block'; // Mostra
-        } else {
-            card.style.display = 'none';  // Esconde
-        }
-    });
 }

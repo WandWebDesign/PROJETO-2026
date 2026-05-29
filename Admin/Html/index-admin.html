@@ -51,19 +51,17 @@
                 <div class="topbar-acoes-direita">
     
                 <div class="filtros-admin-container" style="display: flex; gap: 10px; align-items: center;">
-                    
                     <div class="busca-admin-container">
-                        <input type="text" id="busca-admin" placeholder="Procurar pedido..." onkeyup="filtrarPedidosAdmin()">
+                        <input type="text" id="busca-admin" placeholder="Procurar..." onkeyup="filtrarTelaAdmin()">
                     </div>
 
-                    <select id="filtro-status-admin" onchange="filtrarPedidosAdmin()" style="padding: 10px; border-radius: 8px; border: 1px solid #A89F98;">
+                    <select id="filtro-status-admin" onchange="filtrarTelaAdmin()" style="padding: 10px; border-radius: 8px; border: 1px solid #A89F98; display: none;">
                         <option value="todos">Todos os Status</option>
                         <option value="Pendente">⏳ Pendente</option>
                         <option value="Em produção">👨‍🍳 Em produção</option>
                         <option value="Finalizado">✅ Finalizado</option>
                         <option value="Cancelado">🚫 Cancelado</option>
                     </select>
-                    
                 </div>
 
                 <div class="acoes-topo">
@@ -92,17 +90,33 @@
                     <input type="hidden" id="prod-id-original">
                     
                     <div class="linha-form">
+                    <div class="campo">
+                        <label>Código do Produto (Gerado pelo Banco):</label>
+                        <input type="text" id="prod-id" placeholder="Automático" disabled style="background-color: #f0f0f0;">
+                    </div>
+                    <div class="campo">
+                        <label>Setor:</label>
+                        <select id="prod-setor" required>
+                            <option value="padaria">Padaria</option>
+                            <option value="acougue">Açougue</option>
+                            <option value="hortifruti">Hortifruti</option>
+                            <option value="mercearia">Mercearia</option>
+                        </select>
+                    </div>
+                </div>
+
+                    <div class="linha-form">
                         <div class="campo">
-                            <label>ID do Produto (Sem espaços):</label>
-                            <input type="text" id="prod-id" placeholder="Ex: paofrances" required>
-                        </div>
-                        <div class="campo">
-                            <label>Setor:</label>
-                            <select id="prod-setor" required>
+                            <label>Categoria:</label>
+                            <select id="prod-categoria" required>
                                 <option value="padaria">Padaria</option>
-                                <option value="acougue">Açougue</option>
+                                <option value="frios">Frios</option>
                                 <option value="hortifruti">Hortifruti</option>
                                 <option value="mercearia">Mercearia</option>
+                                <option value="bebidas">Bebidas</option>
+                                <option value="limpeza">Limpeza</option>
+                                <option value="pets">Pets</option>
+                                <option value="doces">Doces</option>
                             </select>
                         </div>
                     </div>
@@ -110,36 +124,48 @@
                     <div class="campo">
                         <label>Título do Produto:</label>
                         <input type="text" id="prod-titulo" placeholder="Ex: Pão Francês Quentinho" required>
+                        <label for="prod-estoque">Quantidade em Estoque:</label>
+                        <input type="number" id="prod-estoque" min="0" oninput="if(this.value < 0) this.value = 0;" placeholder="Ex: 50" required>
                     </div>
 
                     <div class="linha-form">
-                        <div class="campo">
-                            <label>Preço Principal:</label>
-                            <input type="text" id="prod-preco" placeholder="Ex: 15,90 / Kg" required>
+                        <div class="campo" style="flex: 2;">
+                            <label>Preço Principal (R$):</label>
+                            <input type="text" id="prod-preco" placeholder="Ex: 15,90" required>
                         </div>
-                        <div class="campo">
-                            <label>Preço em Oferta (Opcional):</label>
-                            <input type="text" id="prod-oferta" placeholder="Ex: 12,90 / Kg">
+                        
+                        <div class="campo" style="flex: 1;">
+                            <label>Unidade:</label>
+                            <select id="prod-unidade" required>
+                                <option value="Un">Unidade (Un)</option>
+                                <option value="Kg">Quilo (Kg)</option>
+                                <option value="100g">A cada 100g</option>
+                                <option value="Fatia">Fatia</option>
+                                <option value="Dúzia">Dúzia</option>
+                            </select>
+                        </div>
+
+                        <div class="campo" style="flex: 2;">
+                            <label>Preço Oferta (R$ - Opcional):</label>
+                            <input type="text" id="prod-oferta" placeholder="Ex: 12,90">
                         </div>
                     </div>
 
                     <div class="campo">
-                        <label>Fotos do Produto (Mínimo 4, Máximo 6):</label>
+                        <label>Fotos do Produto em Base64:</label>
                         <div class="area-upload">
                             <input type="file" id="prod-imagens-input" accept="image/*" multiple hidden onchange="gerenciarUploadImagens(this)">
                             <button type="button" class="btn-escolher-fotos" onclick="document.getElementById('prod-imagens-input').click()">
                                 <span>📸</span> Selecionar Fotos da Máquina
                             </button>
-                            
                             <div id="grid-previsualizacao" class="grid-previsualizacao">
-                                <p class="msg-vazia">Nenhuma foto selecionada (Mínimo 4 necessárias)</p>
+                                <p class="msg-vazia">Nenhuma foto selecionada</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="campo-checkbox">
                         <label><input type="checkbox" id="prod-tag-retiravel"> Disponível para Agendamento / Retirada</label>
-                        <label><input type="checkbox" id="prod-tag-oferta"> Marcar como Oferta da Semana</label>
                     </div>
                 </form>
             </div>

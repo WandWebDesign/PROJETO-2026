@@ -225,16 +225,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* =======================================================
-   PESQUISA GLOBAL INTELIGENTE (IndexedDB)
+   PESQUISA GLOBAL INTELIGENTE (API MySQL)
 ======================================================= */
 
 // Remove acentos para a pesquisa funcionar se o cliente digitar "pao" em vez de "pão"
 function removerAcentosBusca(str) {
+    if (!str) return "";
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 async function pesquisarProdutos() {
     const input = document.getElementById('input-busca');
+    if (!input) return; // Evita erros em páginas que não têm a barra de busca
+    
     const termo = input.value.trim().toLowerCase();
     let dropdown = document.getElementById('dropdown-resultados');
 
@@ -252,86 +255,47 @@ async function pesquisarProdutos() {
         return;
     }
 
-    // 3. Conecta ao Banco de Dados (PadariaDB_V6)
     try {
-        const DB_NAME = "PadariaDB_V6";
-        const db = await new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME);
-            request.onsuccess = (e) => resolve(e.target.result);
-            request.onerror = () => reject("Erro ao abrir banco de dados");
-        });
+        // 3. Puxa os produtos do nosso backend Node.js
+        const resposta = await fetch('http://localhost:3000/api/produtos');
+        const todosOsProdutos = await resposta.json();
 
-        // 4. Vasculha todos os setores usando CURSOR para extrair o ID com segurança
-        const setores = ["padaria", "acougue", "hortifruti", "mercearia"];
-        let todosOsProdutos = [];
-
-        for (let setor of setores) {
-            if (db.objectStoreNames.contains(setor)) {
-                const transaction = db.transaction(setor, 'readonly');
-                const store = transaction.objectStore(setor);
-                
-                // Mudança Crítica: Usando Cursor para amarrar a Chave (ID) ao objeto do produto
-                await new Promise((resolveItem) => {
-                    const cursorReq = store.openCursor();
-                    cursorReq.onsuccess = (e) => {
-                        const cursor = e.target.result;
-                        if (cursor) {
-                            const produtoComId = cursor.value;
-                            // Forçamos a ID real do registro a entrar na propriedade 'id'
-                            produtoComId.id = cursor.key; 
-                            
-                            todosOsProdutos.push(produtoComId);
-                            cursor.continue();
-                        } else {
-                            resolveItem();
-                        }
-                    };
-                    cursorReq.onerror = () => resolveItem();
-                });
-            }
-        }
-
-        // 5. Filtra os produtos com base no que foi digitado
+        // 4. Filtra os produtos com base no que foi digitado
         const termoLimpo = removerAcentosBusca(termo);
         const resultados = todosOsProdutos.filter(prod => {
-            if (!prod.tituloproduto) return false;
-            const tituloLimpo = removerAcentosBusca(prod.tituloproduto.toLowerCase());
+            if (!prod.nome) return false;
+            const tituloLimpo = removerAcentosBusca(prod.nome.toLowerCase());
             return tituloLimpo.includes(termoLimpo);
         });
 
-        // 6. Desenha os resultados na tela
+        // 5. Desenha os resultados na tela
         dropdown.innerHTML = '';
         if (resultados.length > 0) {
             resultados.forEach(prod => {
                 const div = document.createElement('div');
                 div.className = 'item-busca';
                 
-                // Lógica de imagens à prova de falhas (suporta array novo do admin ou fallback antigo)
-                let imagemSrc = "./Imagens/Logo.png";
-                let imgTemp = (prod.imagens && prod.imagens.length > 0) ? prod.imagens[0] : prod.imagem;
-                if (imgTemp) {
-                    imagemSrc = imgTemp.startsWith('../../') ? './' + imgTemp.substring(6) : imgTemp;
-                }
+                // Pega a imagem em Base64 que veio do banco
+                let imagemSrc = prod.imagem_base64 || "./Imagens/Logo.png";
 
-                // Verifica se tem a tag "retiravel" no banco de dados
-                const podeAgendar = prod.tags && prod.tags.includes('retiravel');
+                // Verifica se o produto é retirável no banco de dados (MySQL retorna 1 para true)
+                const podeAgendar = prod.is_retiravel === 1;
                 const tagVisual = podeAgendar 
                     ? '<span class="tag-agendavel">📅 Disponível para Agendamento</span>' 
                     : '<span class="tag-loja">🛒 Apenas Loja Física</span>';
 
                 div.innerHTML = `
-                    <img src="${imagemSrc}" alt="${prod.tituloproduto}">
+                    <img src="${imagemSrc}" alt="${prod.nome}">
                     <div class="item-busca-info">
-                        <h4>${prod.tituloproduto}</h4>
+                        <h4>${prod.nome}</h4>
                         ${tagVisual}
                     </div>
                 `;
 
-                // 7. Evento de clique! (Agora prod.id existe e contém o valor exato)
+                // 6. Evento de clique usando o codigo_produto
                 div.onclick = () => {
                     if (podeAgendar) {
-                        // Redireciona perfeitamente sem o erro de 'undefined'
-                        window.location.href = `pagina-agendamento.html?id=${prod.id}`;
+                        window.location.href = `pagina-agendamento.html?id=${prod.codigo_produto}`;
                     } else {
                         // Se não for agendável, envia para o catálogo geral com o termo buscado
                         window.location.href = `pagina-catalogo.html?busca=${encodeURIComponent(termo)}`;
@@ -348,7 +312,7 @@ async function pesquisarProdutos() {
         }
 
     } catch (erro) {
-        console.log("Erro na busca dinâmica do header:", erro);
+        console.error("Erro na busca dinâmica do header:", erro);
     }
 }
 

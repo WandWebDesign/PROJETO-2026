@@ -115,11 +115,6 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 /* Mantém o botão Adicionar e Sair nos tamanhos originais */
 .titulo-setor-atual h1 { font-size: 2rem; font-weight: 900; color: var(--cafe-escuro); text-transform: capitalize; margin: 0; }
 
-/* Ajuste na barra de busca para que ela tenha um tamanho fixo e não esprema os botões */
-.busca-admin-container {
-    width: 300px; /* Largura fixa */
-}
-
 .busca-admin-container input {
     width: 100%; 
     padding: 12px 20px; 
@@ -176,39 +171,11 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 
 /* ================== FORMULÁRIO MODAL (GIGANTE) ================== */
 
-/* Fundo escuro que cobre todo o ecrã */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px); 
-    z-index: 9999; /* Fica por cima de tudo na página */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* A caixa principal de edição */
-.modal-box {
-    background-color: var(--branco);
-    width: 85%; /* Ocupa 85% do ecrã */
-    max-width: 900px; 
-    height: 85vh; /* Ocupa 85% da altura */
-    border-radius: 20px;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-    overflow-y: auto;
-}
-
 .modal-header {
     margin-bottom: 30px;
     border-bottom: 2px solid var(--creme-fundo);
     padding-bottom: 15px;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -217,7 +184,17 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     font-weight: 900;
 }
 
-.modal-body { flex-grow: 1; }
+.modal-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+/* Scrollbar sutil dentro do modal */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: #D4C5A9; border-radius: 10px; }
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--cafe-claro); }
 
 .form-admin { display: flex; flex-direction: column; gap: 20px; }
 .linha-form { display: flex; gap: 20px; }
@@ -243,7 +220,7 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     font-size: 1.05rem;
 }
 
-.modal-footer { display: flex; gap: 20px; margin-top: 30px; }
+.modal-footer { display: flex; gap: 20px; margin-top: 30px; flex-shrink: 0; }
 .btn-salvar { flex: 1; background: var(--dourado-suave); color: var(--cafe-escuro); border: none; padding: 18px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.3s;}
 .btn-salvar:hover { background-color: var(--cafe-escuro); color: var(--branco); }
 .btn-cancelar { flex: 1; background: transparent; border: 2px solid var(--cafe-escuro); color: var(--cafe-escuro); padding: 18px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.3s;}
@@ -298,25 +275,23 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 
 .modal-box {
     background: var(--branco);
-    width: 95%; /* Quase toda a largura */
+    width: 95%;
     max-width: 1100px;
-    height: 90vh; /* Quase toda a altura */
+    max-height: 90vh;
     border-radius: 24px;
     padding: 40px;
     display: flex; flex-direction: column;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    overflow: hidden;
 }
 
 /* ÁREA DE UPLOAD E PREVISÃO */
 .area-upload {
-    background: var(--fundo-admin);
-    border: 2px dashed var(--cafe-claro);
-    border-radius: 16px;
-    padding: 20px;
-    margin-top: 10px;
-    text-align: center;
+    border: 2px dashed #D4C5A9;
+    padding: 15px;
+    border-radius: 8px;
+    background: #FAFAFA;
 }
-
 .btn-escolher-fotos {
     background: var(--cafe-escuro);
     color: var(--branco);
@@ -332,24 +307,26 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
 .btn-escolher-fotos:hover { background: var(--dourado-suave); }
 
 .grid-previsualizacao {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-    min-height: 150px;
+    display: flex;
+    flex-wrap: wrap; /* Faz as fotos irem para a linha de baixo se passarem do limite */
+    gap: 10px;
+    margin-top: 15px;
+    min-height: 100px; /* Garante espaço para a mensagem "Nenhuma foto" */
     align-items: center;
 }
 
 .foto-preview {
     position: relative;
-    width: 120px; height: 120px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    width: 80px;
+    height: 80px;
 }
 
 .foto-preview img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ddd;
 }
 
 .btn-remover-foto {
@@ -507,6 +484,30 @@ body { background-color: var(--fundo-admin); color: var(--cafe-escuro); overflow
     background-color: var(--branco);
 }
 .pedido-footer select:focus { border-color: var(--dourado-suave); }
+.pedido-footer select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Botão cancelar no rodapé do card de pedido */
+.btn-cancelar-pedido {
+    background: var(--vermelho-alerta);
+    color: var(--branco);
+    border: none;
+    border-radius: 8px;
+    padding: 0 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s;
+    flex-shrink: 0;
+}
+.btn-cancelar-pedido:hover { background: #c9302c; transform: scale(1.05); }
+
+/* Motivo de cancelamento exibido no rodapé */
+.justificativa-cancelamento {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--vermelho-alerta);
+    font-weight: 700;
+    font-style: italic;
+}
 
 /* Botão de excluir discreto no cabeçalho */
 .btn-remover-pedido { 
