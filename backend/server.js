@@ -307,17 +307,21 @@ app.post('/api/pedidos', async (req, res) => {
 // =======================================================
 // ROTA: BUSCAR PEDIDOS (Com suporte a Justificativa de Cancelamento)
 // =======================================================
+// =======================================================
+// ROTA: BUSCAR PEDIDOS (Com suporte a Justificativa de Cancelamento)
+// =======================================================
 app.get('/api/pedidos', async (req, res) => {
     try {
         const sql = `
             SELECT 
                 p.codigo_pedido, p.codigo_retirada AS id, c.nome AS cliente, 
+                c.cpf, /* <-- CORREÇÃO 1: BUSCANDO O CPF NO BANCO AQUI */
                 DATE_FORMAT(p.data_pedido, '%d/%m/%Y') AS dataPedido, 
                 DATE_FORMAT(p.data_retirada, '%d/%m/%Y') AS dataRetirada, 
                 p.hora_retirada AS horaRetirada, 
                 p.forma_pagto AS pagamento, p.total AS valorTotal, 
                 p.situacao AS status, 
-                p.justificativa, /* <-- COLUNA NOVA AQUI */
+                p.justificativa, 
                 GROUP_CONCAT(CONCAT(pr.nome, ':', i.quantidade) SEPARATOR ';') AS itens_string
             FROM pedidos p
             LEFT JOIN clientes c ON p.codigo_cliente = c.codigo_cliente
@@ -339,13 +343,14 @@ app.get('/api/pedidos', async (req, res) => {
             return {
                 id: p.id,
                 cliente: p.cliente || 'Desconhecido',
+                cpf: p.cpf || 'Não informado', /* <-- CORREÇÃO 2: ENVIANDO O CPF PARA O FRONT-END AQUI */
                 dataPedido: p.dataPedido,
                 dataRetirada: p.dataRetirada,
                 horaRetirada: p.horaRetirada,
                 pagamento: p.pagamento,
                 valorTotal: parseFloat(p.valorTotal),
                 status: p.status,
-                justificativa: p.justificativa, // <-- ENVIA PARA O FRONT-END AQUI
+                justificativa: p.justificativa, 
                 itens: itens
             };
         });
@@ -356,7 +361,6 @@ app.get('/api/pedidos', async (req, res) => {
         res.status(500).json({ erro: erro.message });
     }
 });
-
 
 // =======================================================
 // 3. ROTA: ATUALIZAR STATUS E SALVAR JUSTIFICATIVA
