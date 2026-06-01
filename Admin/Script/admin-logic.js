@@ -57,7 +57,16 @@ async function carregarSetorAdmin(setor) {
         if(buscaInput) buscaInput.placeholder = "Procurar pedido ou cliente...";
         
         mostrarPedidosNoAdmin();
-    } 
+    } else if (setor === 'clientes') {
+        gridAdmin.style.display = 'grid'; 
+        document.querySelector('.acoes-topo').style.display = 'none'; 
+        document.querySelector('.filtros-admin-container').style.display = 'flex';
+        
+        if(filtroStatus) filtroStatus.style.display = 'none';
+        if(buscaInput) buscaInput.placeholder = "Procurar cliente (Nome, CPF)...";
+        
+        mostrarClientesNoAdmin();
+    }
     else {
         gridAdmin.style.display = 'grid'; 
         document.querySelector('.acoes-topo').style.display = 'block';
@@ -324,7 +333,13 @@ async function salvarProduto() {
 function filtrarTelaAdmin() {
     const termo = document.getElementById('busca-admin').value.toLowerCase().trim();
 
-    if (setorAdminAtual === 'pedidos') {
+    if (setorAdminAtual === 'clientes') {
+        const cardsClientes = document.querySelectorAll('.card-cliente-admin');
+        cardsClientes.forEach(card => {
+            const textoCard = card.innerText.toLowerCase();
+            card.style.display = textoCard.includes(termo) ? 'flex' : 'none';
+        });
+    } else if (setorAdminAtual === 'pedidos') {
         const statusFiltro = document.getElementById('filtro-status-admin').value;
         const cardsPedidos = document.querySelectorAll('.card-pedido-admin');
         
@@ -346,21 +361,29 @@ function filtrarTelaAdmin() {
         });
     }
 }
-// =======================================================
-// LÓGICA DE PEDIDOS E VENDAS (VIA LOCALSTORAGE - TEMPORÁRIO)
-// =======================================================
 
-function mostrarPedidosNoAdmin() {
+/// =======================================================
+// MOSTRAR PEDIDOS (Buscando dinamicamente do MySQL)
+// =======================================================
+async function mostrarPedidosNoAdmin() {
     const grid = document.getElementById('grid-admin-produtos');
-    grid.innerHTML = '';
+    grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Carregando pedidos do sistema...</p>';
     
-    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    let pedidos = [];
+    try {
+        const resposta = await fetch('http://localhost:3000/api/pedidos');
+        pedidos = await resposta.json();
+    } catch (erro) {
+        grid.innerHTML = '<p class="msg-vazia" style="grid-column: 1 / -1; text-align: center; color: red;">Erro ao conectar com o banco de dados.</p>';
+        return;
+    }
     
     if (pedidos.length === 0) {
         grid.innerHTML = '<p class="msg-vazia" style="grid-column: 1 / -1; text-align: center; font-size: 1.2rem;">Nenhum pedido recebido ainda.</p>';
         return;
     }
 
+    grid.innerHTML = '';
     const corPorStatus = {
         'Pendente':    '#C8973D',
         'Em produção': '#4A7C59',
@@ -368,13 +391,13 @@ function mostrarPedidosNoAdmin() {
         'Cancelado':   '#D9534F'
     };
     
-    pedidos.forEach((pedido, index) => {
+    pedidos.forEach((pedido) => {
         const corHeader = corPorStatus[pedido.status] || '#C8973D';
         const totalFormatado = parseFloat(pedido.valorTotal).toFixed(2).replace('.', ',');
         
         const isCancelado = pedido.status === 'Cancelado';
         const isFinalizado = pedido.status === 'Finalizado';
-        const isTrancado = isCancelado || isFinalizado; // Se finalizou ou cancelou, não muda mais status
+        const isTrancado = isCancelado || isFinalizado;
 
         const itensHTML = pedido.itens.map(item =>
             `<li><span>${item.nome}</span><strong>${item.quantidade}x</strong></li>`
@@ -392,7 +415,8 @@ function mostrarPedidosNoAdmin() {
                         <div class="icone-user">👤</div>
                         <div>
                             <h5>${pedido.cliente}</h5>
-                            <span style="font-size:0.8rem; color:var(--cafe-claro);">📅 ${pedido.dataRetirada} às ${pedido.horaRetirada}</span>
+                            <span style="font-size:0.8rem; color:var(--cafe-claro); display:block; margin-bottom:3px;">📄 CPF: ${pedido.cpf}</span>
+                            <span style="font-size:0.8rem; color:var(--cafe-claro);">📅 Retirada: ${pedido.dataRetirada} às ${pedido.horaRetirada}</span>
                         </div>
                     </div>
 
@@ -407,7 +431,7 @@ function mostrarPedidosNoAdmin() {
                 <div class="pedido-footer">
                     <label>Alterar Status</label>
                     <div style="display:flex; gap:10px;">
-                        <select onchange="alterarStatusPedido(${index}, this.value)" ${isTrancado ? 'disabled' : ''}>
+                        <select onchange="alterarStatusPedidoBanco('${pedido.id}', this.value)" ${isTrancado ? 'disabled' : ''}>
                             <option value="Pendente"    ${pedido.status === 'Pendente'    ? 'selected' : ''}>⏳ Pendente</option>
                             <option value="Em produção" ${pedido.status === 'Em produção' ? 'selected' : ''}>👨‍🍳 Em produção</option>
                             <option value="Finalizado"  ${pedido.status === 'Finalizado'  ? 'selected' : ''}>✅ Finalizado</option>
@@ -415,9 +439,7 @@ function mostrarPedidosNoAdmin() {
                         </select>
                         
                         ${!isTrancado ? 
-                            `<button class="btn-cancelar-pedido" onclick="abrirModalCancelamentoAdmin(${index})" title="Cancelar pedido">🚫</button>` 
-                            : 
-                            `<button onclick="removerPedidoAdmin(${index})" style="background: #A89F98; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer;" title="Apagar Histórico">🗑️</button>`
+                            `<button class="btn-cancelar-pedido" onclick="abrirModalCancelamentoAdminBanco('${pedido.id}')" title="Cancelar pedido">🚫</button>` : ''
                         }
                     </div>
                     ${isCancelado && pedido.justificativa ? `<p class="justificativa-cancelamento" style="margin-top:10px; font-size:0.85rem; color:#D9534F;">Motivo: ${pedido.justificativa}</p>` : ''}
@@ -426,120 +448,240 @@ function mostrarPedidosNoAdmin() {
         `;
     });
 }
+// =======================================================
+// ENVIAR MUDANÇA DE STATUS SIMPLES PARA O BANCO
+// =======================================================
+async function alterarStatusPedidoBanco(idPedido, novoStatus) {
+    try {
+        const resposta = await fetch(`http://localhost:3000/api/pedidos/${idPedido}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: novoStatus })
+        });
 
-// NOVA FUNÇÃO: EXCLUIR PEDIDO DO HISTÓRICO
-function removerPedidoAdmin(index) {
-    if(confirm("Tem certeza que deseja apagar o registro deste pedido? Essa ação não pode ser desfeita.")) {
-        let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-        pedidos.splice(index, 1);
-        localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
-        if(typeof mostrarToast === 'function') mostrarToast("Pedido removido do histórico!");
-        mostrarPedidosNoAdmin();
+        if (resposta.ok) {
+            if(typeof mostrarToast === 'function') mostrarToast(`Status atualizado para: ${novoStatus}`);
+            mostrarPedidosNoAdmin();
+        }
+    } catch (erro) {
+        alert("Erro ao atualizar status do pedido.");
     }
 }
 
-function alterarStatusPedido(index, novoStatus) {
-    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    pedidos[index].status = novoStatus;
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
-    if(typeof mostrarToast === 'function') mostrarToast(`Status atualizado para: ${novoStatus}`);
-    mostrarPedidosNoAdmin();
-}
+// =======================================================
+// CANCELAMENTO VIA MODAL COM SALVAMENTO DE JUSTIFICATIVA
+// =======================================================
+let idPedidoCancelamentoAtual = null;
 
-let indiceCancelamentoAtual = null;
-
-function abrirModalCancelamentoAdmin(index) {
-    indiceCancelamentoAtual = index;
+function abrirModalCancelamentoAdminBanco(idPedido) {
+    idPedidoCancelamentoAtual = idPedido;
     const modal = document.getElementById('modal-justificativa-admin');
     if(modal) modal.style.display = 'flex';
 }
 
+// ---> FUNÇÃO QUE ESTAVA FALTANDO PARA FECHAR O MODAL <---
 function fecharModalJustificativa() {
-    indiceCancelamentoAtual = null;
     const modal = document.getElementById('modal-justificativa-admin');
     if(modal) modal.style.display = 'none';
 }
 
-function confirmarCancelamentoAdmin() {
-    if(indiceCancelamentoAtual === null) return;
+async function confirmarCancelamentoAdmin() {
+    if(idPedidoCancelamentoAtual === null) return;
     
-    const justificativa = document.getElementById('select-justificativa-admin').value;
-    let pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    // Captura o select de justificativa (verifique se o ID no seu HTML é esse mesmo)
+    const elementoJustificativa = document.getElementById('select-justificativa-admin');
+    const justificativa = elementoJustificativa ? elementoJustificativa.value : 'Cancelado pelo administrador';
     
-    pedidos[indiceCancelamentoAtual].status = 'Cancelado';
-    pedidos[indiceCancelamentoAtual].justificativa = justificativa; // Salva o motivo
-    
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidos));
-    
-    fecharModalJustificativa();
-    if(typeof mostrarToast === 'function') mostrarToast("Pedido cancelado e cliente notificado!");
-    mostrarPedidosNoAdmin();
+    try {
+        const resposta = await fetch(`http://localhost:3000/api/pedidos/${idPedidoCancelamentoAtual}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Cancelado', justificativa: justificativa })
+        });
+
+        if (resposta.ok) {
+            fecharModalJustificativa(); // Agora a função existe e o código não vai quebrar aqui!
+            
+            if(typeof mostrarToast === 'function') {
+                mostrarToast("Pedido cancelado e salvo no banco!");
+            } else {
+                alert("Pedido cancelado e salvo no banco!");
+            }
+            
+            idPedidoCancelamentoAtual = null;
+            mostrarPedidosNoAdmin(); // Recarrega os pedidos dinamicamente na tela
+        } else {
+            const erroApi = await resposta.json();
+            alert("Falha relatada pelo servidor: " + (erroApi.erro || 'Erro desconhecido'));
+        }
+    } catch (erro) {
+        // Se falhar no futuro, aperte F12 e olhe o console para ver a causa exata!
+        console.error("Erro interno no JavaScript ou na conexão:", erro);
+        alert("Erro ao submeter cancelamento. Verifique o console (F12).");
+    }
 }
 
-function mostrarVendasNoAdmin() {
+async function mostrarVendasNoAdmin() {
     const grid = document.getElementById('grid-admin-produtos');
-    const pedidos = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
+    grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Calculando estatísticas no servidor...</p>';
     
-    const finalizados  = pedidos.filter(p => p.status === 'Finalizado');
-    const cancelados   = pedidos.filter(p => p.status === 'Cancelado');
-    const emProducao   = pedidos.filter(p => p.status === 'Em produção');
-    const pendentes    = pedidos.filter(p => p.status === 'Pendente');
-    const totalArrecadado = finalizados.reduce((acc, p) => acc + p.valorTotal, 0);
+    try {
+        const resposta = await fetch('http://localhost:3000/api/pedidos');
+        const pedidos = await resposta.json();
+        
+        const finalizados  = pedidos.filter(p => p.status === 'Finalizado');
+        const emProducao   = pedidos.filter(p => p.status === 'Em produção');
+        const cancelados   = pedidos.filter(p => p.status === 'Cancelado');
+        const pendentes    = pedidos.filter(p => p.status === 'Pendente');
+        
+        // A Arrecadação agora engloba os que estão Prontos (Finalizados) e os que estão sendo feitos (Em Produção)
+        const totalArrecadado = finalizados.reduce((acc, p) => acc + p.valorTotal, 0) + 
+                                emProducao.reduce((acc, p) => acc + p.valorTotal, 0);
 
-    // Ranking de produtos mais vendidos
-    const contagemItens = {};
-    finalizados.forEach(p => {
-        p.itens.forEach(item => {
-            contagemItens[item.nome] = (contagemItens[item.nome] || 0) + item.quantidade;
+        // Ranking de produtos leva em conta Finalizados + Em produção
+        const contagemItens = {};
+        [...finalizados, ...emProducao].forEach(p => {
+            p.itens.forEach(item => {
+                contagemItens[item.nome] = (contagemItens[item.nome] || 0) + item.quantidade;
+            });
         });
-    });
-    const ranking = Object.entries(contagemItens)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
+        const ranking = Object.entries(contagemItens)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
 
-    const rankingHTML = ranking.length > 0
-        ? ranking.map(([nome, qtd], i) => `
-            <tr>
-                <td class="item-nome">${['🥇','🥈','🥉','4º','5º'][i]} ${nome}</td>
-                <td class="item-qtd">${qtd} un.</td>
-            </tr>`).join('')
-        : `<tr><td colspan="2" style="color:var(--cafe-claro); text-align:center; padding:20px 0;">Sem vendas ainda</td></tr>`;
+        const rankingHTML = ranking.length > 0
+            ? ranking.map(([nome, qtd], i) => `
+                <tr>
+                    <td class="item-nome">${['🥇','🥈','🥉','4º','5º'][i]} ${nome}</td>
+                    <td class="item-qtd">${qtd} un.</td>
+                </tr>`).join('')
+            : `<tr><td colspan="2" style="color:var(--cafe-claro); text-align:center; padding:20px 0;">Nenhuma venda confirmada ainda.</td></tr>`;
 
-    grid.innerHTML = `
-        <div class="dashboard-vendas" style="grid-column: 1 / -1;">
-
-            <div class="metric-card">
-                <h4>💰 Total Arrecadado</h4>
-                <span class="valor">R$ ${totalArrecadado.toFixed(2).replace('.', ',')}</span>
+        grid.innerHTML = `
+            <div class="dashboard-vendas" style="grid-column: 1 / -1;">
+                <div class="metric-card">
+                    <h4>💰 Estimativa de Receita</h4>
+                    <span class="valor">R$ ${totalArrecadado.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div class="metric-card">
+                    <h4>✅ Pedidos Entregues</h4>
+                    <span class="valor">${finalizados.length}</span>
+                </div>
+                <div class="metric-card">
+                    <h4>👨‍🍳 Em Produção</h4>
+                    <span class="valor">${emProducao.length}</span>
+                </div>
+                <div class="metric-card">
+                    <h4>⏳ Pendentes</h4>
+                    <span class="valor">${pendentes.length}</span>
+                </div>
+                <div class="metric-card">
+                    <h4>🚫 Cancelados</h4>
+                    <span class="valor">${cancelados.length}</span>
+                </div>
+                <div class="metric-card" style="grid-column: span 2;">
+                    <h4>🏆 Produtos Mais Vendidos (Em Produção + Finalizados)</h4>
+                    <table class="ranking-tabela">
+                        <tbody>${rankingHTML}</tbody>
+                    </table>
+                </div>
             </div>
+        `;
+    } catch (erro) {
+        grid.innerHTML = '<p class="msg-vazia" style="color: red; grid-column: 1 / -1; text-align: center;">Erro ao conectar com o banco de dados das vendas.</p>';
+    }
+}
 
-            <div class="metric-card">
-                <h4>✅ Pedidos Entregues</h4>
-                <span class="valor">${finalizados.length}</span>
-            </div>
+// =======================================================
+// LÓGICA DE CLIENTES NO PAINEL ADMIN
+// =======================================================
+async function mostrarClientesNoAdmin() {
+    const grid = document.getElementById('grid-admin-produtos');
+    grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Carregando clientes do sistema...</p>';
+    
+    try {
+        const resposta = await fetch('http://localhost:3000/api/clientes');
+        const clientes = await resposta.json();
+        
+        if (clientes.length === 0) {
+            grid.innerHTML = '<p class="msg-vazia" style="grid-column: 1 / -1; text-align: center;">Nenhum cliente cadastrado.</p>';
+            return;
+        }
 
-            <div class="metric-card">
-                <h4>👨‍🍳 Em Produção</h4>
-                <span class="valor">${emProducao.length}</span>
-            </div>
+        grid.innerHTML = '';
+        clientes.forEach(cliente => {
+            grid.innerHTML += `
+                <div class="card-cliente-admin" style="background: white; border: 1.5px solid #D4C5A9; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+                        <div style="font-size: 2.5rem;">👤</div>
+                        <div>
+                            <h3 style="margin: 0; color: #4A3B32; font-size: 1.2rem;">${cliente.nome}</h3>
+                            <p style="margin: 0; font-size: 0.85rem; color: #7A6A5A; margin-top: 4px;">📄 CPF: ${cliente.cpf}</p>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #4A3B32; flex-grow: 1;">
+                        <p style="margin: 5px 0;">📧 <strong>E-mail:</strong> ${cliente.email}</p>
+                        <p style="margin: 5px 0;">📞 <strong>Tel:</strong> ${cliente.telefone || 'Não informado'}</p>
+                    </div>
+                    <button onclick="abrirModalPedidosCliente('${cliente.email}', '${cliente.nome}')" style="background: #C8973D; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%;">Ver Histórico de Pedidos</button>
+                </div>
+            `;
+        });
+    } catch (erro) {
+        grid.innerHTML = '<p class="msg-vazia" style="color:red; text-align:center; grid-column: 1 / -1;">Erro ao buscar lista de clientes.</p>';
+    }
+}
 
-            <div class="metric-card">
-                <h4>⏳ Pendentes</h4>
-                <span class="valor">${pendentes.length}</span>
-            </div>
+async function abrirModalPedidosCliente(email, nome) {
+    const modal = document.getElementById('modal-pedidos-cliente');
+    const container = document.getElementById('lista-pedidos-cliente-modal');
+    document.getElementById('titulo-modal-pedidos-cliente').innerText = `Histórico de: ${nome}`;
+    
+    container.innerHTML = '<p style="text-align:center; color: #C8973D;">Buscando histórico de pedidos...</p>';
+    modal.style.display = 'flex';
+    
+    try {
+        // Usa a rota já existente que puxa dados pelo E-mail!
+        const resposta = await fetch(`http://localhost:3000/api/pedidos/cliente/${email}`);
+        const pedidos = await resposta.json();
+        
+        if (pedidos.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#A89F98; padding: 20px;">Este cliente não possui nenhum pedido.</p>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        pedidos.forEach(pedido => {
+            const corPorStatus = {
+                'Pendente':    '#C8973D',
+                'Em produção': '#4A7C59',
+                'Finalizado':  '#28a745',
+                'Cancelado':   '#D9534F'
+            };
+            const cor = corPorStatus[pedido.status] || '#A89F98';
+            const itensHTML = pedido.itens.map(item => `<li>${item.quantidade}x ${item.nome}</li>`).join('');
+            
+            container.innerHTML += `
+                <div style="border-left: 6px solid ${cor}; padding: 15px; margin-bottom: 15px; background: #FFF8EC; border-radius: 8px; border-right: 1px solid #EEDFCE; border-top: 1px solid #EEDFCE; border-bottom: 1px solid #EEDFCE;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin:0; color: #4A3B32;">Pedido #${pedido.id}</h4>
+                        <span style="background:${cor}; color:white; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight:bold;">${pedido.status}</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #7A6A5A; margin:0 0 10px 0;">Feito em: ${pedido.dataPedido} | Retirada: ${pedido.dataRetirada} às ${pedido.horaRetirada}</p>
+                    <ul style="margin: 0 0 12px 20px; font-size: 0.95rem; color: #4A3B32;">${itensHTML}</ul>
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; color: #4A3B32; border-top: 1px dashed #D4C5A9; padding-top: 10px;">
+                        <span>Pagamento: ${pedido.pagamento}</span>
+                        <span>R$ ${pedido.valorTotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+    } catch (erro) {
+        container.innerHTML = '<p style="text-align:center; color:red; padding: 20px;">Erro ao conectar com o banco de dados.</p>';
+    }
+}
 
-            <div class="metric-card">
-                <h4>🚫 Cancelados</h4>
-                <span class="valor">${cancelados.length}</span>
-            </div>
-
-            <div class="metric-card" style="grid-column: span 2;">
-                <h4>🏆 Produtos Mais Vendidos</h4>
-                <table class="ranking-tabela">
-                    <tbody>${rankingHTML}</tbody>
-                </table>
-            </div>
-
-        </div>
-    `;
+function fecharModalPedidosCliente() {
+    document.getElementById('modal-pedidos-cliente').style.display = 'none';
 }

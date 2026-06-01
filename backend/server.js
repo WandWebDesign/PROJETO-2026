@@ -132,3 +132,333 @@ app.delete('/api/produtos/:id', async (req, res) => {
 });
 
 app.listen(3000, () => console.log('Servidor rodando na porta 3000'));
+
+// =======================================================
+// ROTA: LIMPAR PEDIDOS CONCLUÍDOS/CANCELADOS DO CLIENTE
+// =======================================================
+app.delete('/api/pedidos/cliente/:email/concluidos', async (req, res) => {
+    const { email } = req.params;
+    let conexao;
+    try {
+        conexao = await db.getConnection();
+        await conexao.beginTransaction(); // Inicia uma transação segura
+
+        // 1. Busca os IDs dos pedidos que estão Finalizados ou Cancelados deste cliente
+        const [pedidos] = await conexao.query(`
+            SELECT p.codigo_pedido FROM pedidos p
+            JOIN clientes c ON p.codigo_cliente = c.codigo_cliente
+            JOIN usuarios u ON c.codigo_usuario = u.codigo_usuario
+            WHERE u.email = ? AND (p.situacao = 'Finalizado' OR p.situacao = 'Cancelado')
+        `, [email]);
+
+        if (pedidos.length > 0) {
+            // Extrai apenas os números dos IDs em um Array [1, 2, 3...]
+            const idsPedidos = pedidos.map(p => p.codigo_pedido);
+            
+            // 2. Apaga primeiro os itens vinculados a esses pedidos (Evita erro de Foreign Key)
+            await conexao.query(`DELETE FROM itens_pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+            
+            // 3. Agora sim, apaga os registros da tabela de pedidos
+            await conexao.query(`DELETE FROM pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+        }
+
+        await conexao.commit(); // Confirma as alterações no banco de dados
+        res.json({ mensagem: "Pedidos concluídos e cancelados limpos com sucesso!" });
+    } catch (erro) {
+        if (conexao) await conexao.rollback(); // Desfaz tudo se der algum erro no caminho
+        console.error("Erro ao limpar concluídos:", erro);
+        res.status(500).json({ erro: erro.message });
+    } finally {
+        if (conexao) conexao.release(); // Libera a conexão de volta para o pool
+    }
+});
+
+// =======================================================
+// ROTA: LIMPAR TODO O HISTÓRICO DO CLIENTE
+// =======================================================
+app.delete('/api/pedidos/cliente/:email/todos', async (req, res) => {
+    const { email } = req.params;
+    let conexao;
+    try {
+        conexao = await db.getConnection();
+        await conexao.beginTransaction();
+
+        // 1. Busca os IDs de TODOS os pedidos do cliente (independentemente do status)
+        const [pedidos] = await conexao.query(`
+            SELECT p.codigo_pedido FROM pedidos p
+            JOIN clientes c ON p.codigo_cliente = c.codigo_cliente
+            JOIN usuarios u ON c.codigo_usuario = u.codigo_usuario
+            WHERE u.email = ?
+        `, [email]);
+
+        if (pedidos.length > 0) {
+            const idsPedidos = pedidos.map(p => p.codigo_pedido);
+            
+            // 2. Limpa todos os itens correspondentes
+            await conexao.query(`DELETE FROM itens_pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+            
+            // 3. Limpa todos os pedidos
+            await conexao.query(`DELETE FROM pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+        }
+
+        await conexao.commit();
+        res.json({ mensagem: "Todo o histórico foi limpo com sucesso!" });
+    } catch (erro) {
+        if (conexao) await conexao.rollback();
+        console.error("Erro ao limpar histórico completo:", erro);
+        res.status(500).json({ erro: erro.message });
+    } finally {
+        if (conexao) conexao.release();
+    }
+});
+
+/// =======================================================
+// FUNÇÃO AUXILIAR DE DATAS (À Prova de falhas)
+// =======================================================
+function converterDataParaMySQL(data) {
+    if (!data) return null;
+    // Se a data vier com barras (ex: 31/05/2026), converte para MySQL (YYYY-MM-DD)
+    if (data.includes('/')) {
+        const [dia, mes, ano] = data.split('/');
+        return `${ano}-${mes}-${dia}`;
+    }
+    // Se já vier do input type="date" (ex: 2026-05-31), devolve como está
+    return data; 
+}
+
+// =======================================================
+// 1. ROTA: SALVAR NOVO PEDIDO (Checkout -> Banco)
+// =======================================================
+app.post('/api/pedidos', async (req, res) => {
+    const { id, cliente, dataPedido, valorTotal, pagamento, dataRetirada, horaRetirada, itens } = req.body;
+
+    if (!id || !itens || itens.length === 0) {
+        return res.status(400).json({ erro: "Dados do pedido ausentes." });
+    }
+
+    let conexao;
+    try {
+        conexao = await db.getConnection();
+        await conexao.beginTransaction();
+
+        const dataPedidoSQL = converterDataParaMySQL(dataPedido) || new Date().toISOString().split('T')[0];
+        const dataRetiradaSQL = converterDataParaMySQL(dataRetirada);
+
+        // 1. Busca o ID numérico do Cliente cruzando as tabelas clientes e usuarios
+        const sqlBuscaCliente = `
+            SELECT c.codigo_cliente 
+            FROM clientes c
+            JOIN usuarios u ON c.codigo_usuario = u.codigo_usuario
+            WHERE u.email = ? OR c.nome = ? LIMIT 1
+        `;
+        const [buscaCliente] = await conexao.query(sqlBuscaCliente, [cliente, cliente]);
+        
+        if (buscaCliente.length === 0) {
+            throw new Error(`O usuário '${cliente}' não possui registro na tabela clientes do banco de dados.`);
+        }
+        const idCliente = buscaCliente[0].codigo_cliente;
+
+        // 2. Insere o Pedido
+        const sqlPedido = `
+            INSERT INTO pedidos 
+            (codigo_cliente, situacao, total, data_pedido, data_retirada, hora_retirada, codigo_retirada, forma_pagto) 
+            VALUES (?, 'Pendente', ?, ?, ?, ?, ?, ?)`;
+
+        const [resultadoPedido] = await conexao.query(sqlPedido, [
+            idCliente, valorTotal, dataPedidoSQL, dataRetiradaSQL, horaRetirada, id, pagamento
+        ]);
+        const idPedidoGerado = resultadoPedido.insertId;
+
+        // 3. Insere os Itens do Pedido (com validação de existência)
+        for (let item of itens) {
+            const nomeItem = item.nome || item.tituloproduto; 
+            const [buscaProduto] = await conexao.query(`SELECT codigo_produto, valor FROM produtos WHERE nome = ? LIMIT 1`, [nomeItem]);
+            
+            if (buscaProduto.length === 0) {
+                throw new Error(`O produto '${nomeItem}' tentou ser comprado, mas não existe na tabela produtos do MySQL!`);
+            }
+
+            const idProduto = buscaProduto[0].codigo_produto; 
+            const precoUnit = buscaProduto[0].valor;
+            const qtde = item.quantidade || 1;
+            const subtotal = precoUnit * qtde;
+
+            const sqlItens = `INSERT INTO itens_pedidos (codigo_pedido, codigo_produto, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?)`;
+            await conexao.query(sqlItens, [idPedidoGerado, idProduto, qtde, precoUnit, subtotal]);
+        }
+
+        // Salva a transação e finaliza
+        await conexao.commit();
+        res.status(201).json({ mensagem: "Pedido gravado com sucesso!", id_pedido: idPedidoGerado });
+
+    } catch (erro) {
+        if (conexao) await conexao.rollback();
+        // AQUI ESTÁ O SEGREDO: O erro real e detalhado aparecerá no terminal do Node.js!
+        console.error("❌ FALHA NO BANCO DE DADOS:", erro.message); 
+        res.status(500).json({ erro: "Erro ao inserir pedido: " + erro.message });
+    } finally {
+        if (conexao) conexao.release();
+    }
+});
+
+// =======================================================
+// 2. ROTA: BUSCAR PEDIDOS (Banco -> Painel Admin)
+// =======================================================
+// =======================================================
+// ROTA: BUSCAR PEDIDOS (Com suporte a Justificativa de Cancelamento)
+// =======================================================
+app.get('/api/pedidos', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                p.codigo_pedido, p.codigo_retirada AS id, c.nome AS cliente, 
+                DATE_FORMAT(p.data_pedido, '%d/%m/%Y') AS dataPedido, 
+                DATE_FORMAT(p.data_retirada, '%d/%m/%Y') AS dataRetirada, 
+                p.hora_retirada AS horaRetirada, 
+                p.forma_pagto AS pagamento, p.total AS valorTotal, 
+                p.situacao AS status, 
+                p.justificativa, /* <-- COLUNA NOVA AQUI */
+                GROUP_CONCAT(CONCAT(pr.nome, ':', i.quantidade) SEPARATOR ';') AS itens_string
+            FROM pedidos p
+            LEFT JOIN clientes c ON p.codigo_cliente = c.codigo_cliente
+            LEFT JOIN itens_pedidos i ON p.codigo_pedido = i.codigo_pedido
+            LEFT JOIN produtos pr ON i.codigo_produto = pr.codigo_produto
+            GROUP BY p.codigo_pedido
+            ORDER BY p.codigo_pedido DESC
+        `;
+
+        const [resultados] = await db.query(sql);
+
+        // Formata os dados para o JavaScript do Front-end entender
+        const pedidosFormatados = resultados.map(p => {
+            const itens = p.itens_string ? p.itens_string.split(';').map(itemStr => {
+                const [nome, quantidade] = itemStr.split(':');
+                return { nome, quantidade: parseInt(quantidade) };
+            }) : [];
+
+            return {
+                id: p.id,
+                cliente: p.cliente || 'Desconhecido',
+                dataPedido: p.dataPedido,
+                dataRetirada: p.dataRetirada,
+                horaRetirada: p.horaRetirada,
+                pagamento: p.pagamento,
+                valorTotal: parseFloat(p.valorTotal),
+                status: p.status,
+                justificativa: p.justificativa, // <-- ENVIA PARA O FRONT-END AQUI
+                itens: itens
+            };
+        });
+
+        res.json(pedidosFormatados);
+    } catch (erro) {
+        console.error("Erro ao buscar pedidos:", erro);
+        res.status(500).json({ erro: erro.message });
+    }
+});
+
+
+// =======================================================
+// 3. ROTA: ATUALIZAR STATUS E SALVAR JUSTIFICATIVA
+// =======================================================
+app.put('/api/pedidos/:codigo/status', async (req, res) => {
+    const { codigo } = req.params;
+    const { status, justificativa } = req.body; 
+
+    try {
+        let sql;
+        let parametros;
+
+        // isNaN (is Not-a-Number) verifica se o código contém letras/símbolos (Ex: 'PED-765898')
+        if (isNaN(codigo)) {
+            sql = `UPDATE pedidos SET situacao = ?, justificativa = ? WHERE codigo_retirada = ?`;
+            parametros = [status, justificativa || null, codigo];
+        } 
+        // Se for um ID numérico purinho (Ex: '15')
+        else {
+            sql = `UPDATE pedidos SET situacao = ?, justificativa = ? WHERE codigo_pedido = ?`;
+            parametros = [status, justificativa || null, codigo];
+        }
+        
+        await db.query(sql, parametros);
+        
+        res.json({ mensagem: "Status do pedido modificado com sucesso!" });
+    } catch (erro) {
+        console.error("Erro ao atualizar status:", erro);
+        res.status(500).json({ erro: erro.message });
+    }
+});
+// =======================================================
+// 4. ROTA: BUSCAR PEDIDOS ESPECÍFICOS DO CLIENTE (Por E-mail)
+// =======================================================
+app.get('/api/pedidos/cliente/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const sql = `
+            SELECT 
+                p.codigo_pedido, p.codigo_retirada AS id, c.nome AS cliente, 
+                DATE_FORMAT(p.data_pedido, '%d/%m/%Y') AS dataPedido, 
+                DATE_FORMAT(p.data_retirada, '%d/%m/%Y') AS dataRetirada, 
+                p.hora_retirada AS horaRetirada, 
+                p.forma_pagto AS pagamento, p.total AS valorTotal, 
+                p.situacao AS status,
+                p.justificativa, /* <-- CORREÇÃO: ADICIONADO AQUI NO SQL */
+                GROUP_CONCAT(CONCAT(pr.nome, ':', i.quantidade) SEPARATOR ';') AS itens_string
+            FROM pedidos p
+            JOIN clientes c ON p.codigo_cliente = c.codigo_cliente
+            JOIN usuarios u ON c.codigo_usuario = u.codigo_usuario
+            LEFT JOIN itens_pedidos i ON p.codigo_pedido = i.codigo_pedido
+            LEFT JOIN produtos pr ON i.codigo_produto = pr.codigo_produto
+            WHERE u.email = ?
+            GROUP BY p.codigo_pedido
+            ORDER BY p.codigo_pedido DESC`;
+
+        const [resultados] = await db.query(sql, [email]);
+
+        // Formata os dados para o JavaScript do Front-end ler perfeitamente
+        const pedidosFormatados = resultados.map(p => {
+            const itens = p.itens_string ? p.itens_string.split(';').map(itemStr => {
+                const [nome, quantidade] = itemStr.split(':');
+                return { nome, quantidade: parseInt(quantidade) };
+            }) : [];
+
+            return {
+                id: p.id, 
+                cliente: p.cliente,
+                dataPedido: p.dataPedido,
+                dataRetirada: p.dataRetirada,
+                horaRetirada: p.horaRetirada,
+                pagamento: p.pagamento,
+                valorTotal: parseFloat(p.valorTotal),
+                status: p.status,
+                justificativa: p.justificativa, // <-- CORREÇÃO: ENVIANDO PARA O FRONT-END AQUI
+                itens: itens
+            };
+        });
+
+        res.json(pedidosFormatados);
+    } catch (erro) {
+        console.error("Erro ao buscar pedidos do cliente:", erro);
+        res.status(500).json({ erro: erro.message });
+    }
+});
+// =======================================================
+// 5. ROTA: BUSCAR TODOS OS CLIENTES
+// =======================================================
+app.get('/api/clientes', async (req, res) => {
+    try {
+        const sql = `
+            SELECT c.codigo_cliente, c.nome, c.cpf, c.telefone, u.email
+            FROM clientes c
+            JOIN usuarios u ON c.codigo_usuario = u.codigo_usuario
+            ORDER BY c.nome ASC
+        `;
+        const [resultados] = await db.query(sql);
+        res.json(resultados);
+    } catch (erro) {
+        console.error("Erro ao buscar clientes:", erro);
+        res.status(500).json({ erro: erro.message });
+    }
+});
+
+//npm install express mysql2 cors

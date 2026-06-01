@@ -321,92 +321,85 @@ function confirmarRemocao() {
 /* =======================================================
    FINALIZAR COMPRA — aplica data/hora única em todos os itens
 ======================================================= */
+// O NOVO FLUXO DE RECIBO AO FINALIZAR
+// O NOVO FLUXO DE RECIBO AO FINALIZAR
 function finalizarCompra(valorTotal, totalItens) {
     const estaLogado = localStorage.getItem('usuarioLogado');
 
-    if (!estaLogado) {
-        mostrarToast('Você precisa estar logado para finalizar o pedido!');
-        setTimeout(() => { window.location.href = 'padaria-login.html'; }, 1500);
+    if (!estaLogado || estaLogado !== 'true') {
+        alert("Por favor, faça login antes de finalizar a compra.");
+        window.location.href = 'padaria-login.html';
         return;
     }
 
+    // 1. CORREÇÃO: Captura os IDs corretos gerados dinamicamente no HTML
+    const dataInput = document.getElementById('data-pedido-global')?.value;
+    const horaEscolhida = document.getElementById('hora-pedido-global')?.value;
+    
+    // Captura o input de rádio que estiver marcado
     const formaPagamento = document.querySelector('input[name="pagamento-checkout"]:checked');
-    if (!formaPagamento) {
-        mostrarToast('Por favor, selecione uma forma de pagamento.');
-        return;
-    }
+    const pagamentoEscolhido = formaPagamento ? formaPagamento.value : null;
 
-    const dataInput = document.getElementById('data-pedido-global');
-    const horaInput = document.getElementById('hora-pedido-global');
+    if (!dataInput) { alert("Por favor, escolha uma data para retirada."); return; }
+    if (!horaEscolhida) { alert("Por favor, escolha um horário para retirada."); return; }
+    if (!pagamentoEscolhido) { alert("Por favor, selecione a forma de pagamento."); return; }
 
-    if (!dataInput?.value) {
-        mostrarToast('⚠️ Escolha uma data para a retirada!');
-        dataInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-    }
-    if (!horaInput?.value) {
-        mostrarToast('⚠️ Escolha um horário para a retirada!');
-        horaInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-    }
-
-    const dataFormatada    = dataInput.value.split('-').reverse().join('/');
-    const horaEscolhida    = horaInput.value;
-    const pagamentoEscolhido = formaPagamento.value;
-
-    // Aplica a mesma data e hora em TODOS os itens antes de salvar
-    let carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
-    carrinhoAtual = carrinhoAtual.map(item => ({
-        ...item,
-        dataRetirada: dataFormatada,
-        horaRetirada: horaEscolhida
-    }));
-    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
-
-    const codigo   = Math.floor(100000 + Math.random() * 900000);
+    // Formata a data de YYYY-MM-DD para DD/MM/YYYY de forma segura
+    const dataFormatada = dataInput.split('-').reverse().join('/');
     const dataHoje = new Date().toLocaleDateString('pt-BR');
 
-    // Salvar no histórico do cliente
-    const novoPedidoFinalizado = {
-        id: codigo,
-        dataPedido: dataHoje,
-        itens: carrinhoAtual,
-        total: valorTotal,
-        qtdItens: totalItens,
-        pagamento: pagamentoEscolhido,
-        dataRetirada: dataFormatada,
-        horaRetirada: horaEscolhida
-    };
+    // Gera um código único baseado no timestamp
+    const codigo = 'PED-' + Date.now().toString().slice(-6);
 
-    let historico = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
-    historico.push(novoPedidoFinalizado);
-    localStorage.setItem('historicoPedidos', JSON.stringify(historico));
+    let carrinhoAtual = JSON.parse(localStorage.getItem('carrinho')) || [];
+    
+    // Resgata o email real gravado no momento do login
+    const emailDoCliente = localStorage.getItem('emailUsuario') || 'Cliente Desconhecido';
 
-    // Enviar para o painel Admin
     const novoPedidoAdmin = {
         id: codigo,
-        cliente: estaLogado,
+        cliente: emailDoCliente, 
         dataPedido: dataHoje,
         itens: carrinhoAtual,
         valorTotal: valorTotal,
-        status: 'Pendente',
         pagamento: pagamentoEscolhido,
         dataRetirada: dataFormatada,
         horaRetirada: horaEscolhida
     };
 
-    const pedidosAdmin = JSON.parse(localStorage.getItem('pedidosPadaria')) || [];
-    pedidosAdmin.push(novoPedidoAdmin);
-    localStorage.setItem('pedidosPadaria', JSON.stringify(pedidosAdmin));
+    // Envia o payload direto para a API Node
+    fetch('http://localhost:3000/api/pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novoPedidoAdmin)
+    })
+    .then(async resposta => {
+        if (!resposta.ok) {
+            const erroAPI = await resposta.json();
+            throw new Error(erroAPI.erro || 'Não foi possível salvar o pedido no banco.');
+        }
+        return resposta.json();
+    })
+    .then(() => {
+        // Mostra o modal de sucesso na tela apenas se salvou com sucesso no MySQL
+        document.getElementById('display-codigo').innerText  = codigo;
+        document.getElementById('modal-qtd').innerText       = totalItens + ' un';
+        document.getElementById('modal-total').innerText     = formatarDinheiroCheckout(valorTotal);
+        document.getElementById('modal-pagamento').innerText = pagamentoEscolhido;
 
-    // Modal de confirmação
-    document.getElementById('display-codigo').innerText  = codigo;
-    document.getElementById('modal-qtd').innerText       = totalItens + ' un';
-    document.getElementById('modal-total').innerText     = formatarDinheiroCheckout(valorTotal);
-    document.getElementById('modal-pagamento').innerText = pagamentoEscolhido;
+        document.getElementById('modal-confirmacao').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
 
-    document.getElementById('modal-confirmacao').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+        // Limpa o carrinho local e salva no histórico local
+        let historico = JSON.parse(localStorage.getItem('historicoPedidos')) || [];
+        historico.push(novoPedidoAdmin); 
+        localStorage.setItem('historicoPedidos', JSON.stringify(historico));
+        localStorage.removeItem('carrinho');
+    })
+    .catch(erro => {
+        console.error("Erro detalhado no checkout:", erro);
+        alert("Erro ao processar compra: " + erro.message);
+    });
 }
 
 function fecharModalCompra() {
