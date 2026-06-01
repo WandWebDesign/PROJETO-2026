@@ -33,6 +33,7 @@ async function carregarSetorAdmin(setor) {
     const gridAdmin = document.getElementById('grid-admin-produtos'); 
     const filtroStatus = document.getElementById('filtro-status-admin');
     const buscaInput = document.getElementById('busca-admin');
+    const btnLimparSistema = document.getElementById('btn-limpar-sistema'); // <-- Captura o botão da topbar
     
     document.getElementById('titulo-setor-admin').innerText = setor.charAt(0).toUpperCase() + setor.slice(1);
     document.querySelectorAll('.btn-circulo').forEach(btn => btn.classList.remove('ativo'));
@@ -41,6 +42,11 @@ async function carregarSetorAdmin(setor) {
 
     // Limpa a barra de busca ao trocar de aba
     if(buscaInput) buscaInput.value = '';
+
+    // CONTROLE DE VISIBILIDADE DO BOTÃO DE LIMPAR NA TOPBAR
+    if (btnLimparSistema) {
+        btnLimparSistema.style.display = (setor === 'pedidos') ? 'flex' : 'none';
+    }
 
     if (setor === 'vendas') {
         gridAdmin.style.display = 'block'; 
@@ -72,7 +78,7 @@ async function carregarSetorAdmin(setor) {
         document.querySelector('.acoes-topo').style.display = 'block';
         document.querySelector('.filtros-admin-container').style.display = 'flex';
         
-        if(filtroStatus) filtroStatus.style.display = 'none'; // Esconde filtro de status
+        if(filtroStatus) filtroStatus.style.display = 'none'; 
         if(buscaInput) buscaInput.placeholder = "Procurar produto...";
         
         try {
@@ -85,7 +91,6 @@ async function carregarSetorAdmin(setor) {
         }
     }
 }
-
 function desenharGradeAdmin(produtos) {
     const grid = document.getElementById('grid-admin-produtos');
     grid.innerHTML = '';
@@ -383,7 +388,11 @@ async function mostrarPedidosNoAdmin() {
         return;
     }
 
-    grid.innerHTML = '';
+    // ==========================================
+    // MUDANÇA AQUI: Inserindo o botão no topo do Grid
+    // ==========================================
+    grid.innerHTML = ``;
+
     const corPorStatus = {
         'Pendente':    '#C8973D',
         'Em produção': '#4A7C59',
@@ -592,6 +601,8 @@ async function mostrarVendasNoAdmin() {
     }
 }
 
+
+
 // =======================================================
 // LÓGICA DE CLIENTES NO PAINEL ADMIN
 // =======================================================
@@ -684,4 +695,29 @@ async function abrirModalPedidosCliente(email, nome) {
 
 function fecharModalPedidosCliente() {
     document.getElementById('modal-pedidos-cliente').style.display = 'none';
+}
+
+// =======================================================
+// LIMPEZA GLOBAL DE PEDIDOS (ADMIN)
+// =======================================================
+async function limparPedidosGlobaisConcluidos() {
+    // Alerta redobrado porque apaga para todos os clientes
+    if (!confirm("⚠️ ATENÇÃO ADMIN: Tem certeza que deseja apagar TODOS os pedidos Finalizados e Cancelados de TODOS os clientes? Esta ação afeta o banco de dados geral e não pode ser desfeita.")) {
+        return;
+    }
+
+    try {
+        const resposta = await fetch('http://localhost:3000/api/admin/pedidos/concluidos', { 
+            method: 'DELETE' 
+        });
+        
+        if (resposta.ok) {
+            if(typeof mostrarToast === 'function') mostrarToast("Limpeza global concluída com sucesso!");
+            mostrarPedidosNoAdmin(); // Recarrega a tela na mesma hora
+        } else {
+            alert("Erro ao executar a limpeza global.");
+        }
+    } catch (erro) {
+        alert("Erro de conexão ao tentar limpar pedidos globais.");
+    }
 }

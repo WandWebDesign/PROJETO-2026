@@ -465,6 +465,40 @@ app.get('/api/clientes', async (req, res) => {
     }
 });
 
+// =======================================================
+// ROTA ADMIN: LIMPAR TODOS OS PEDIDOS CONCLUÍDOS/CANCELADOS GERAIS
+// =======================================================
+app.delete('/api/admin/pedidos/concluidos', async (req, res) => {
+    let conexao;
+    try {
+        conexao = await db.getConnection();
+        await conexao.beginTransaction();
+
+        // Pega TODOS os pedidos do banco que já terminaram
+        const [pedidos] = await conexao.query(`
+            SELECT codigo_pedido FROM pedidos 
+            WHERE situacao = 'Finalizado' OR situacao = 'Cancelado'
+        `);
+
+        if (pedidos.length > 0) {
+            const idsPedidos = pedidos.map(p => p.codigo_pedido);
+            
+            // Apaga os itens e depois os pedidos gerais
+            await conexao.query(`DELETE FROM itens_pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+            await conexao.query(`DELETE FROM pedidos WHERE codigo_pedido IN (?)`, [idsPedidos]);
+        }
+
+        await conexao.commit();
+        res.json({ mensagem: "Limpeza global realizada com sucesso!" });
+    } catch (erro) {
+        if (conexao) await conexao.rollback();
+        console.error("Erro na limpeza global do admin:", erro);
+        res.status(500).json({ erro: erro.message });
+    } finally {
+        if (conexao) conexao.release();
+    }
+});
+
 //cd PROJETO-2026
 //cd backend
 //npm install express mysql2 cors

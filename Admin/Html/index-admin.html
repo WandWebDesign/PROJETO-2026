@@ -54,29 +54,33 @@
 
                 <div class="topbar-acoes-direita">
     
-                <div class="filtros-admin-container" style="display: flex; gap: 10px; align-items: center;">
-                    <div class="busca-admin-container">
-                        <input type="text" id="busca-admin" placeholder="Procurar..." onkeyup="filtrarTelaAdmin()">
+                    <div class="filtros-admin-container" style="display: flex; gap: 10px; align-items: center;">
+                        <div class="busca-admin-container">
+                            <input type="text" id="busca-admin" placeholder="Procurar..." onkeyup="filtrarTelaAdmin()">
+                        </div>
+
+                        <select id="filtro-status-admin" onchange="filtrarTelaAdmin()" style="padding: 10px; border-radius: 8px; border: 1px solid #A89F98; display: none;">
+                            <option value="todos">Todos os Status</option>
+                            <option value="Pendente">⏳ Pendente</option>
+                            <option value="Em produção">👨‍🍳 Em produção</option>
+                            <option value="Finalizado">✅ Finalizado</option>
+                            <option value="Cancelado">🚫 Cancelado</option>
+                        </select>
                     </div>
 
-                    <select id="filtro-status-admin" onchange="filtrarTelaAdmin()" style="padding: 10px; border-radius: 8px; border: 1px solid #A89F98; display: none;">
-                        <option value="todos">Todos os Status</option>
-                        <option value="Pendente">⏳ Pendente</option>
-                        <option value="Em produção">👨‍🍳 Em produção</option>
-                        <option value="Finalizado">✅ Finalizado</option>
-                        <option value="Cancelado">🚫 Cancelado</option>
-                    </select>
-                </div>
+                    <div class="acoes-topo">
+                        <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
+                    </div>
 
-                <div class="acoes-topo">
-                    <button class="btn-adicionar-produto" onclick="abrirModalProduto()">+ Adicionar Produto</button>
-                </div>
+                    <button id="btn-limpar-sistema" onclick="limparPedidosGlobaisConcluidos()" style="display: none; padding: 10px 15px; background-color: #D9534F; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; align-items: center; gap: 5px; font-size: 0.9rem; transition: 0.2s; height: 40px;">
+                        🗑️ Limpar Concluídos
+                    </button>
 
-                <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
-                    <span class="icone">↩️</span>
-                    <span class="texto-circulo">Sair</span>
-                </a>
-            </div>
+                    <a href="../../padaria-landinpage.html" class="btn-circulo btn-voltar-loja" title="Sair do Painel">
+                        <span class="icone">↩️</span>
+                        <span class="texto-circulo">Sair</span>
+                    </a>
+                </div>
             </header>
 
             <section class="grid-admin" id="grid-admin-produtos">
