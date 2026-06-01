@@ -461,4 +461,8 @@ app.get('/api/clientes', async (req, res) => {
     }
 });
 
+//cd PROJETO-2026
+//cd backend
 //npm install express mysql2 cors
+//node migrarProdutos.js (Apenas caso ja n tenha feito uma vez - Uma só vez é necessária)
+//node server.js
